@@ -1,0 +1,89 @@
+## Path:	Productivity/Other
+## Description: Limits for system tuning profile "sap-netweaver".
+## ServiceRestart: tuned
+
+## Type:	integer
+## Default:	8388608
+#
+# The lower tuning limit of the size of tmpfs mounted on /dev/shm in KiloBytes.
+# It should not be smaller than 8388608 (8GB).
+#
+TMPFS_SIZE_MIN=8388608
+
+## Type:	integer
+## Default:	5242880
+#
+# The lower tuning limit of the maximum total number of shared memory pages.
+# This number should not be less than 20 GB divided by the size in
+# bytes of one page. To determine the current page size run the
+# command "getconf PAGESIZE".
+# 
+SHMALL_MIN=5242880
+
+## Type:	integer
+## Default:	21474836480
+#
+# The lower tuning limit of the maximum amount of a single shared memory
+# segment in Bytes.
+# This number should not be less than 20 GB (SAP Note 941735).
+#
+SHMMAX_MIN=21474836480
+
+## Type:	integer
+## Default:	1250
+#
+# The lower tuning limit of the maximum number of semaphores per semaphore set.
+#
+SEMMSL_MIN=1250
+
+## Type:	integer
+## Default:	256000
+#
+# The lower tuning limit of the maximum total number of semaphores.
+#
+SEMMNS_MIN=256000
+
+## Type:	integer
+## Default:	100
+#
+# The lower tuning limit of the maximum number of semaphore operations that
+# can be performed per "semop" system call.
+#
+SEMOPM_MIN=100
+
+## Type:	integer
+## Default:	8192
+#
+# The lower tuning limit of maxium total number of semaphore sets.
+#
+SEMMNI_MIN=8192
+
+## Type:	integer
+## Default:	2000000
+#
+# The lower tuning limit of the maximum total number of memory map areas.
+#
+MAX_MAP_COUNT_MIN=2000000
+
+## Type:	integer(50:90)
+## Default:	75
+#
+# Size of the requested tmpfs in percent of the virtual memory.
+# Depending on the size of TMPFS_SIZE_MIN, the size of the
+# virtual memory (physical+swap), and the current size the
+# maximum value is choosen (SAP Note 941735).
+#
+VSZ_TMPFS_PERCENT=75
+
+## Type:        regexp(^@(sapsys|sdba|dba)[[:space:]]+(-|hard|soft)[[:space:]]+(nofile)[[:space:]]+[[:digit:]]+)
+## Default:     ""
+#
+# Maximum number of open files for SAP application groups sapsys, sdba, and dba.
+# Consult with manual page limits.conf(5) for the correct syntax.
+#
+LIMIT_1="@sapsys soft nofile 65536"
+LIMIT_2="@sapsys hard nofile 65536"
+LIMIT_3="@sdba soft nofile 65536"
+LIMIT_4="@sdba hard nofile 65536"
+LIMIT_5="@dba soft nofile 65536"
+LIMIT_6="@dba hard nofile 65536"
