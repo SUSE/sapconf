@@ -8,21 +8,30 @@
 
 . /usr/lib/tuned/functions
 
+
+math() {
+  echo $* | bc | tr -d '\n'
+}
+
+math_test() {
+  [ $(echo $* | bc | tr -d '\n') = '1' ] && echo -n 1
+}
+
 start() {
     # Read system memory size in MB
-    declare -ri MEMSIZE=$(($(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024))
+    declare -r MEMSIZE=$( math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024" )
     # Determine an appropriate value for kernel.shmmni
-    declare -i SHMMNI=$(sysctl -n kernel.shmmni)
-    if [ "$MEMSIZE" -lt 64 ]; then
-        declare -i SHMMNI_NEW=4096
-    elif [ "$MEMSIZE" -lt 256 ]; then
-        declare -i SHMMNI_NEW=65536
+    declare SHMMNI=$(sysctl -n kernel.shmmni)
+    if [ $( math_test "$MEMSIZE < 64" ) ]; then
+        declare SHMMNI_NEW=4096
+    elif [ $( math_test "$MEMSIZE < 256" ) ]; then
+        declare SHMMNI_NEW=65536
     else
-        declare -i SHMMNI_NEW=524288
+        declare SHMMNI_NEW=524288
     fi
     # New SHMMNI may not be lower than current settings
-    if [ "$SHMMNI_NEW" -lt "$SHMMNI" ]; then
-        declare -i SHMMNI_NEW="$SHMMNI"
+    if [ $( math_test "$SHMMNI_NEW < $SHMMNI" ) ]; then
+        declare SHMMNI_NEW="$SHMMNI"
     fi
 
     # Apply new SHMMNI value
@@ -31,12 +40,12 @@ start() {
 
     # SAP note 1557506 - Linux paging improvements
     source /etc/sysconfig/sapnote-1557506
-    declare -ri PAGECACHE_LIMIT=$(sysctl -n vm.pagecache_limit_mb)
+    declare -r PAGECACHE_LIMIT=$(sysctl -n vm.pagecache_limit_mb)
     if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
         # Set pagecache limit = 2% of system memory
-        declare -i PAGECACHE_LIMIT_NEW=$((MEMSIZE*1024*2/100))
+        declare PAGECACHE_LIMIT_NEW=$( math "$MEMSIZE*1024*2/100" )
         # If override is present, use the override value.
-        [ "$OVERRIDE_PAGECACHE_LIMIT_MB" ] && declare -i PAGECACHE_LIMIT_NEW="$OVERRIDE_PAGECACHE_LIMIT_MB"
+        [ "$OVERRIDE_PAGECACHE_LIMIT_MB" ] && declare PAGECACHE_LIMIT_NEW="$OVERRIDE_PAGECACHE_LIMIT_MB"
         save_value vm.pagecache_limit_mb "$PAGECACHE_LIMIT"
         sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT_NEW"
         # Set ignore_dirty

@@ -8,26 +8,34 @@
 
 . /usr/lib/tuned/functions
 
+math() {
+  echo $* | bc | tr -d '\n'
+}
+
+math_test() {
+  [ $(echo $* | bc | tr -d '\n') = '1' ] && echo -n 1
+}
+
 start() {
     # Read total memory size (including swap) in KBytes
-    declare -ri VSZ=$(awk -v t=0 '/^(Mem|Swap)Total:/ {t+=$2} END {print t}' < /proc/meminfo)
-    declare -ri PSZ=$(getconf PAGESIZE)
+    declare -r VSZ=$(awk -v t=0 '/^(Mem|Swap)Total:/ {t+=$2} END {print t}' < /proc/meminfo)
+    declare -r PSZ=$(getconf PAGESIZE)
 
     # These names are the tuning parameters
     declare -r TUNED_VARS="TMPFS_SIZE SHMALL SEMMSL SEMMNS SEMOPM SEMMNI SHMMAX MAX_MAP_COUNT"
     for name in $TUNED_VARS; do
         # Current value
-        declare -i $name=0
+        declare $name=0
         # Calculated recommended value / future value
-        declare -i ${name}_REQ=0
+        declare ${name}_REQ=0
         # Minimum boundary is set set in sysconfig/sapconf
-        declare -i ${name}_MIN=0
+        declare ${name}_MIN=0
     done
 
     # Read current kernel tuning values from sysctl
-    declare -i SHMMAX=$(sysctl -n kernel.shmmax)
-    declare -i SHMALL=$(sysctl -n kernel.shmall)
-    declare -i MAX_MAP_COUNT=$(sysctl -n vm.max_map_count)
+    declare SHMMAX=$(sysctl -n kernel.shmmax)
+    declare SHMALL=$(sysctl -n kernel.shmall)
+    declare MAX_MAP_COUNT=$(sysctl -n vm.max_map_count)
     read -r SEMMSL SEMMNS SEMOPM SEMMNI < <(sysctl -n kernel.sem)
 
     # Read current tmpfs mount options and size
@@ -46,19 +54,19 @@ start() {
     fi
 
     # Calculate tuning parameter recommendations according to SAP notes
-    declare -i SHMALL_REQ=$((VSZ*1024/PSZ)) # Note 941735: kernel.shmall is in pages; 20GB
-    declare -i SHMMAX_REQ=$((VSZ*1024)) # Note 941735:  kernel.shmmax is in Bytes: 20GB
-    declare -i TMPFS_SIZE_REQ=$(((VSZ*VSZ_TMPFS_PERCENT)/100)) # Note 941735: size of tmpfs in KB (RAM + SWAP) * 0.75
+    declare SHMALL_REQ=$( math "$VSZ*1024/$PSZ" ) # Note 941735: kernel.shmall is in pages; 20GB
+    declare SHMMAX_REQ=$( math "$VSZ*1024" ) # Note 941735:  kernel.shmmax is in Bytes: 20GB
+    declare TMPFS_SIZE_REQ=$( math "$VSZ*$VSZ_TMPFS_PERCENT/100" ) # Note 941735: size of tmpfs in KB (RAM + SWAP) * 0.75
 
     # No value may go below minimal
     for name in $TUNED_VARS; do
         min=${name}_MIN
         req=${name}_REQ
         val=${!name}
-        if [ ! "${!req}" -o "${!req}" -lt "$val" ]; then
+        if [ ! "${!req}" -o $( math_test "${!req} < $val" ) ]; then
             declare -i $req="$val"
         fi
-        if [ "${!req}" -lt "${!min}" ]; then
+        if [ $( math_test "${!req} < ${!min}" ) ]; then
             declare -i $req="${!min}"
         fi
     done
@@ -98,22 +106,22 @@ start() {
 
     # SAP note 1557506 - Linux paging improvements
     source /etc/sysconfig/sapnote-1557506
-    declare -ri PAGECACHE_LIMIT=$(sysctl -n vm.pagecache_limit_mb)
+    declare -r PAGECACHE_LIMIT=$(sysctl -n vm.pagecache_limit_mb)
     if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
 		# Note that the calculation is different from HANA's algorithm, and it is based on system RAM size instead of VSZ.
-		declare -ri MEMSIZE_GB=$(($(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024))
+		declare -r MEMSIZE_GB=$( math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024" )
 		declare -i PAGECACHE_LIMIT=$(sysctl -n vm.pagecache_limit_mb)
-		if [ "$MEMSIZE_GB" -lt 16 ]; then
-		    declare -i PAGECACHE_LIMIT_NEW=512
-		elif [ "$MEMSIZE_GB" -lt 32 ]; then
-		    declare -i PAGECACHE_LIMIT_NEW=1024
-		elif [ "$MEMSIZE_GB" -lt 64 ]; then
-		    declare -i PAGECACHE_LIMIT_NEW=2048
+		if [ $( math_test "$MEMSIZE_GB < 16" ) ]; then
+		    declare PAGECACHE_LIMIT_NEW=512
+		elif [ $( "$MEMSIZE_GB < 32" ) ]; then
+		    declare PAGECACHE_LIMIT_NEW=1024
+		elif [  $( "$MEMSIZE_GB < 64" ) ]; then
+		    declare PAGECACHE_LIMIT_NEW=2048
 		else
-		    declare -i PAGECACHE_LIMIT_NEW=4096
+		    declare PAGECACHE_LIMIT_NEW=4096
 		fi
         # If override is present, use the override value.
-        [ "$OVERRIDE_PAGECACHE_LIMIT_MB" ] && declare -i PAGECACHE_LIMIT_NEW="$OVERRIDE_PAGECACHE_LIMIT_MB"
+        [ "$OVERRIDE_PAGECACHE_LIMIT_MB" ] && declare PAGECACHE_LIMIT_NEW="$OVERRIDE_PAGECACHE_LIMIT_MB"
         save_value vm.pagecache_limit_mb "$PAGECACHE_LIMIT"
         sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT_NEW"
         # Set ignore_dirty
