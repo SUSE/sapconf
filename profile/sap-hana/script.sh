@@ -6,18 +6,11 @@
 # For SAP Netweaver tuning, please use "sap-netweaver" profile instead of this one.
 # Authors: Howard Guo <hguo@suse.com>
 
-. /usr/lib/tuned/functions
-
-
-math() {
-  echo $* | bc | tr -d '\n'
-}
-
-math_test() {
-  [ $(echo $* | bc | tr -d '\n') = '1' ] && echo -n 1
-}
+. /usr/lib/sapconf/common.sh
 
 start() {
+    # Apply tuning techniques from 1275776 - Preparing SLES for SAP and 1984787 - Installation notes
+    tune_preparation
     # Read system memory size in MB
     declare -r MEMSIZE=$( math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024" )
     # Determine an appropriate value for kernel.shmmni
@@ -75,6 +68,9 @@ start() {
 }
 
 stop() {
+    # Revert tuning techniques from 1275776 - Preparing SLES for SAP and 1984787 - Installation notes
+    revert_preparation
+
     SHMMNI=$(restore_value kernel.shmmni)
     [ "$SHMMNI" ] && sysctl -w "kernel.shmmni=$SHMMNI"
 
