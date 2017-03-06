@@ -17,7 +17,7 @@ start() {
     if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
 		# Note that the calculation is different from HANA's algorithm, and it is based on system RAM size instead of VSZ.
 		declare -r MEMSIZE_GB=$( math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024" )
-		declare -i PAGECACHE_LIMIT=$(sysctl -n vm.pagecache_limit_mb)
+		declare PAGECACHE_LIMIT=$(sysctl -n vm.pagecache_limit_mb)
 		if [ $( math_test "$MEMSIZE_GB < 16" ) ]; then
 		    declare PAGECACHE_LIMIT_NEW=512
 		elif [ $( "$MEMSIZE_GB < 32" ) ]; then

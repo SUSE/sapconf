@@ -45,7 +45,7 @@ tune_preparation() {
     fi
     # Remove size= from mount options
     TMPFS_OPTS=$(echo "$TMPFS_OPTS" | sed 's/size=[^,]\+//' | sed 's/^,//' | sed 's/,$//' | sed 's/,,/,/')
-    declare -i TMPFS_SIZE=$(($(stat -fc '(%b*%S)>>10' /dev/shm))) # in KBytes
+    declare TMPFS_SIZE=$(($(stat -fc '(%b*%S)>>10' /dev/shm))) # in KBytes
 
     # Read minimal value requirements from sysconfig
     if [ -r /etc/sysconfig/sapconf ]; then
