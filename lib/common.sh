@@ -75,9 +75,9 @@ tune_preparation() {
     done
 
     # Tune tmpfs - enlarge if necessary
-    save_value tmpfs.size "$TMPFS_SIZE"
-    save_value tmpfs.mount_opts "$TMPFS_OPTS"
-    if [ "$TMPFS_SIZE_REQ" -gt "$TMPFS_SIZE" ]; then
+    if [ $( math_test "$TMPFS_SIZE_REQ > $TMPFS_SIZE" ) ]; then
+        save_value tmpfs.size "$TMPFS_SIZE"
+        save_value tmpfs.mount_opts "$TMPFS_OPTS"
         mount -o "remount,${TMPFS_OPTS},size=${TMPFS_SIZE_REQ}k" /dev/shm
     fi
 
