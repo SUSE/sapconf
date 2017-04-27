@@ -1,0 +1,67 @@
+.\"/* 
+.\" * All rights reserved
+.\" * Copyright (c) 2016 SUSE LINUX GmbH, Nuernberg, Germany.
+.\" * Authors: Angela Briel <abriel@suse.com>
+.\" *
+.\" * This program is free software; you can redistribute it and/or
+.\" * modify it under the terms of the GNU General Public License
+.\" * as published by the Free Software Foundation; either version 2
+.\" * of the License, or (at your option) any later version.
+.\" *
+.\" * This program is distributed in the hope that it will be useful,
+.\" * but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" * GNU General Public License for more details.
+.\" */
+.\" 
+.TH TUNED_PROFILES_SAP_BOBJ "7" "26 Apr 2017" "Adaptive system tuning daemon" "tuned"
+.SH NAME
+tuned\-profiles\-sap\-bobj - Tuning profile for SAP Business OBJects (BOBJ).
+
+.SH DESCRIPTION
+The tuning profile automatically optimises kernel parameters and system configuration for running SAP Business OBJects (BOBJ) softwares.
+
+The following parameters are calculated and tuned, according to various SAP notes and best practices:
+.IP \[bu]
+Semaphores: kernel.semmsl, semmns, semopm, and semmni
+.IP \[bu]
+Shared memory segments: kernel.shmmax, shmall
+.IP \[bu]
+Size of tmpfs
+.IP \[bu]
+Maximum number of open file descriptors in /etc/security/limits.conf
+.IP \[bu]
+Maximum number of memory mapping regions: vm.max_map_count
+.IP \[bu]
+Pagecache limit: vm.pagecache_limit_mb, pagecache_limit_ignore_dirty
+.IP \[bu]
+CPU power management, disk cache, kernel scheduling and VM tweaks (inherited from throughput-performance profile).
+.IP \[bu]
+Enable uuidd.socket.
+
+.SH "SAP NOTES"
+The tuned parameters are calculated according to SAP note number 1275776, 1984787, 1557506 and the BOBJ Installation Guide for Unix.
+
+.SH ACTIVATION
+To activate the SAP Business OBJects tuning profile, run as root:
+
+tuned-adm profile sap-bobj
+
+.SH "FILES"
+.PP
+\fI/etc/sysconfig/sapconf\fR
+.RS 4
+Define the lower value-boundary of optimised parameters during tuning calculation.
+.RE
+.PP
+\fI/etc/sysconfig/sapnote\-1557506\fR
+.RS 4
+Define the behaviour and overrides for tuning pagecache limit.
+.RE
+
+.SH "SEE ALSO"
+.BR tuned (8)
+.BR tuned\-adm (8)
+.SH AUTHOR
+.NF
+Angela Briel <abriel@suse.com>

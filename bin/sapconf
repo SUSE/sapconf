@@ -58,6 +58,28 @@ case "$1" in
     systemctl status tuned &> /dev/null && exit 0 || exit 1
   ;;
 
+  ase|sybase)
+    # This is a new option, an extension to the traditional sapconf.
+    # It activates SAP ASE tuning profile via the tune daemon.
+    echo 'Forwarding action to tuned-adm.'
+    tuned-adm profile sap-ase &> /dev/null
+    if ! systemctl status tuned &> /dev/null; then
+      systemctl start tuned
+    fi
+    systemctl status tuned &> /dev/null && exit 0 || exit 1
+  ;;
+
+  bobj)
+    # This is a new option, an extension to the traditional sapconf.
+    # It activates SAP Business OBJects tuning profile via the tune daemon.
+    echo 'Forwarding action to tuned-adm.'
+    tuned-adm profile sap-bobj &> /dev/null
+    if ! systemctl status tuned &> /dev/null; then
+      systemctl start tuned
+    fi
+    systemctl status tuned &> /dev/null && exit 0 || exit 1
+  ;;
+
   stop)
     # To remain compatible with the original implementation of sapconf,
     # the stop action does nothing.
@@ -71,7 +93,7 @@ case "$1" in
   ;;
 
   *)
-    echo "Usage: $0 {start|hana|b1|stop|status}"
+    echo "Usage: $0 {start|hana|b1|ase|sybase|bobj|stop|status}"
     exit 1
   ;;
 

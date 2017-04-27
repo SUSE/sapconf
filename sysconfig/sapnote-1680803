@@ -1,0 +1,10 @@
+## Path:           SAP/Note/1680803 - SAP ASE (Sybase) settings - best practice
+## Description:    Tune SAP ASE
+## ServiceRestart: tuned
+
+# IO nr_requests
+NRREQ=1024
+
+# memlock for user sybase
+# Default: 0 (which means calculation: RAM in KB - 10%)
+MEMLOCK=0

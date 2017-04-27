@@ -22,7 +22,7 @@ sapconf \- Kernel and system configuration for SAP products
 sapconf ACTION_NAME
 
 .SH DESCRIPTION
-sapconf activates SAP Netweaver or HANA/BusinessOne tuning profiles depending on the command line action input. sapconf is deprecated in favour of tune daemon (tuned) and its profiles "sap-netweaver", "sap-hana".
+sapconf activates SAP Netweaver, SAP ASE/Sybase, SAP Business OBJects (BOBJ) or HANA/BusinessOne tuning profiles depending on the command line action input. sapconf is deprecated in favour of tune daemon (tuned) and its profiles "sap-netweaver", "sap-hana", "sap-ase", "sap-bobj".
 
 .SH ACTIONS
 
@@ -33,15 +33,21 @@ start,restart,try-restart,reload - If the tune daemon does not have an SAP HANA 
 hana,b1 - Activate SAP HANA or BusinessOne tuning profile. Exit 1 on failure.
 
 .IP \[bu]
+ase,sybase - Activate SAP ASE (Sybase) tuning profile. Exit 1 on failure.
+
+.IP \[bu]
+bobj - Activate SAP Business OBJects (BOBJ) tuning profile. Exit 1 on failure.
+
+.IP \[bu]
 stop - Do nothing.
 
 .IP \[bu]
 status - Report the status of tune daemon. Exit 1 on failure.
 
 .SH SEE\ ALSO
-tuned-profiles-sap-hana(7), tuned-profiles-sap-netweaver(7)
+tuned-profiles-sap-hana(7), tuned-profiles-sap-netweaver(7), tuned-profiles-sap-ase(7), tuned-profiles-sap-bobj(7)
 
 .SH AUTHORS
 .na
-Werner Fink, Fabian Herschel, Howard Guo
+Werner Fink, Fabian Herschel, Howard Guo, Angela Briel
 .nf

@@ -14,8 +14,21 @@ math_test() {
   [ $(echo $* | bc | tr -d '\n') = '1' ] && echo -n 1
 }
 
+# If a tuning parameter is set in the [sysctl] section of tuned.conf file
+# do not overwrite it.
+respect_tuned_file() {
+   grep $1 $2 2>&1 > /dev/null
+   if [ "$?" -ne 0 ]; then
+      echo no
+   else
+      echo yes
+   fi
+}
+
 # Tune system according to 1275776 - Preparing SLES for SAP and 1984787 - Installation notes.
 tune_preparation() {
+    cfg_file = `caller | sed 's#script.sh#tuned.conf#'`
+    cfg_file = ${cfg_file#*[[:space:]]}
     # Read total memory size (including swap) in KBytes
     declare -r VSZ=$(awk -v t=0 '/^(Mem|Swap)Total:/ {t+=$2} END {print t}' < /proc/meminfo)
     declare -r PSZ=$(getconf PAGESIZE)
@@ -82,14 +95,22 @@ tune_preparation() {
     fi
 
     # Tune kernel parameters
-    save_value kernel.shmmax "$SHMMAX"
-    save_value kernel.sem "$(sysctl -n kernel.sem)"
-    save_value kernel.shmall "$SHMALL"
-    save_value vm.max_map_count "$MAX_MAP_COUNT"
-    sysctl -w kernel.shmmax="$SHMMAX_REQ"
-    sysctl -w kernel.sem="$SEMMSL_REQ $SEMMNS_REQ $SEMOPM_REQ $SEMMNI_REQ"
-    sysctl -w kernel.shmall="$SHMALL_REQ"
-    sysctl -w vm.max_map_count="$MAX_MAP_COUNT_REQ"
+    if [ "respect_tuned_file kernel.shmmax $cfg_file" == "no" ]; then
+        save_value kernel.shmmax "$SHMMAX"
+        sysctl -w kernel.shmmax="$SHMMAX_REQ"
+    fi
+    if [ "respect_tuned_file kernel.sem $cfg_file" == "no" ]; then
+        save_value kernel.sem "$(sysctl -n kernel.sem)"
+        sysctl -w kernel.sem="$SEMMSL_REQ $SEMMNS_REQ $SEMOPM_REQ $SEMMNI_REQ"
+    fi
+    if [ "respect_tuned_file kernel.shmall $cfg_file" == "no" ]; then
+        save_value kernel.shmall "$SHMALL"
+        sysctl -w kernel.shmall="$SHMALL_REQ"
+    fi
+    if [ "respect_tuned_file vm.max_map_count $cfg_file" == "no" ]; then
+        save_value vm.max_map_count "$MAX_MAP_COUNT"
+        sysctl -w vm.max_map_count="$MAX_MAP_COUNT_REQ"
+    fi
 
     # Tune ulimits for the max number of open files (rollback is not necessary in revert function)
     all_nofile_limits=""

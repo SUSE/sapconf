@@ -1,0 +1,63 @@
+.\"/* 
+.\" * All rights reserved
+.\" * Copyright (c) 2016 SUSE LINUX GmbH, Nuernberg, Germany.
+.\" * Authors: Angela Briel <abriel@suse.com>
+.\" *
+.\" * This program is free software; you can redistribute it and/or
+.\" * modify it under the terms of the GNU General Public License
+.\" * as published by the Free Software Foundation; either version 2
+.\" * of the License, or (at your option) any later version.
+.\" *
+.\" * This program is distributed in the hope that it will be useful,
+.\" * but WITHOUT ANY WARRANTY; without even the implied warranty of
+.\" * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+.\" * GNU General Public License for more details.
+.\" */
+.\" 
+.TH TUNED_PROFILES_SAP_ASE "7" "26 Apr 2017" "Adaptive system tuning daemon" "tuned"
+.SH NAME
+tuned\-profiles\-sap\-ase - Tuning profile for SAP ASE (Sybase).
+
+.SH DESCRIPTION
+The tuning profile automatically optimises kernel parameters and system configuration for running SAP ASE (Sybase) softwares.
+
+The following parameters are calculated and tuned, according to various SAP notes and best practices:
+.IP \[bu]
+Semaphores: kernel.semmni
+.IP \[bu]
+Pagecache limit: vm.pagecache_limit_mb, pagecache_limit_ignore_dirty
+.IP \[bu]
+Set number of requests for block devices: /sys/block/sd*/queue/nr_requests
+.IP \[bu]
+Set memlock for user sybase: /etc/security/limits.conf
+.IP \[bu]
+CPU power management, disk cache, kernel scheduling and VM tweaks (inherited from throughput-performance profile).
+.IP \[bu]
+Enable uuidd.socket.
+
+.SH "SAP NOTES"
+The tuned parameters are calculated according to SAP note number 1275776, 1984787, 1557506, 1410736, 1680803.
+
+.SH ACTIVATION
+To activate the SAP ASE tuning profile, run as root:
+
+tuned-adm profile sap-ase
+
+.SH "FILES"
+.PP
+\fI/etc/sysconfig/sapnote\-1557506\fR
+.RS 4
+Define the behaviour and overrides for tuning pagecache limit.
+.RE
+.PP
+\fI/etc/sysconfig/sapnote\-1680803\fR
+.RS 4
+Define the behaviour and overrides for tuning memlock and nr_request.
+.RE
+
+.SH "SEE ALSO"
+.BR tuned (8)
+.BR tuned\-adm (8)
+.SH AUTHOR
+.NF
+Angela Briel <abriel@suse.com>
