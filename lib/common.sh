@@ -25,8 +25,33 @@ respect_tuned_file() {
    fi
 }
 
+# write information to the log file of tuned or to the system log
+# and additional write it to stderr
+# write to stderr seems not to work with tuned-adm
+write_log() {
+   log_date=`date '+%F %T'`
+   script_name=`caller | awk '{print $2}'`
+   if [ -z "$log_file" ]; then
+        logger -s "$1: $2"
+   else
+        case $1 in
+        INFO)
+                echo "$log_date     $1      $script_name: $2" >> $log_file
+                ;;
+        *)
+                echo "$log_date     $1 $script_name: $2" >> $log_file
+                ;;
+        esac
+        echo "$1: $2" >&2
+        echo > /dev/tty1
+        echo "$1: $2" > /dev/tty1
+   fi
+}
+
 # Tune system according to 1275776 - Preparing SLES for SAP and 1984787 - Installation notes.
 tune_preparation() {
+    log_file=""
+    [ -f /var/log/tuned/tuned.log ] && log_file=/var/log/tuned/tuned.log
     cfg_file = `caller | sed 's#script.sh#tuned.conf#'`
     cfg_file = ${cfg_file#*[[:space:]]}
     # Read total memory size (including swap) in KBytes
@@ -64,7 +89,7 @@ tune_preparation() {
     if [ -r /etc/sysconfig/sapconf ]; then
         source /etc/sysconfig/sapconf
     else
-        echo 'Failed to read /etc/sysconfig/sapconf'
+        echo 'Failed to read /etc/sysconfig/sapconf' >&2
         exit 1
     fi
 
@@ -127,6 +152,31 @@ tune_preparation() {
             echo "$sysconf_line" >> /etc/security/limits.conf
         done
     done
+
+   # Amend logind's behaviour (bsc#1031355, bsc#1039309, bsc#1043844)
+   # NO revert to avoid rebooting the system every time.
+   write_log INFO "Set the maximum number of OS tasks each user may run concurrently (UserTasksMax) to 'infinity'" 
+   //logger -s "INFO: Set the maximum number of OS tasks each user may run concurrently (UserTasksMax) to 'infinity'"
+   change_sap_conf=false
+   LOGIND_DIR=/etc/systemd/logind.conf.d
+   SAP_LOGIN_FILE=$LOGIND_DIR/sap.conf
+   [ ! -d $LOGIND_DIR ] && mkdir -p $LOGIND_DIR
+   if [ -f $SAP_LOGIN_FILE ]; then
+        grep "^[[:blank:]]*UserTasksMax[[:blank:]]*=[[:blank:]]*infinity" $SAP_LOGIN_FILE > /dev/null 2>&1
+        if [ "$?" -ne 0 ]; then
+                mv $SAP_LOGIN_FILE ${SAP_LOGIN_FILE}.sav
+                change_sap_conf=true
+        else
+                write_log ATTENTION "With this setting your system is vulnerable to fork bomb attacks."
+        fi
+   else
+        change_sap_conf=true
+   fi
+   if $change_sap_conf; then
+        echo "[Login]" > $SAP_LOGIN_FILE
+        echo "UserTasksMax=infinity" >> $SAP_LOGIN_FILE 
+        write_log ATTENTION "Please reboot the system for the changes to take effect"
+   fi
 }
 
 # Revert tuning operations conducted by 1275776 - Preparing SLES for SAP and 1984787 - Installation notes.
