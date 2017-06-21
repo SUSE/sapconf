@@ -32,7 +32,7 @@ write_log() {
    log_date=`date '+%F %T'`
    script_name=`caller | awk '{print $2}'`
    if [ -z "$log_file" ]; then
-        logger -s "$1: $2"
+        logger -s "$1 sapconf: $2"
    else
         case $1 in
         INFO)
@@ -44,7 +44,7 @@ write_log() {
         esac
         echo "$1: $2" >&2
         echo > /dev/tty1
-        echo "$1: $2" > /dev/tty1
+        echo "$1 sapconf: $2" > /dev/tty1
    fi
 }
 
