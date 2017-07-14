@@ -52,8 +52,8 @@ write_log() {
 tune_preparation() {
     log_file=""
     [ -f /var/log/tuned/tuned.log ] && log_file=/var/log/tuned/tuned.log
-    cfg_file = `caller | sed 's#script.sh#tuned.conf#'`
-    cfg_file = ${cfg_file#*[[:space:]]}
+    cfg_file=`caller | awk '{print $2} | sed 's#script.sh#tuned.conf#'`
+    cfg_file=${cfg_file#*[[:space:]]}
     # Read total memory size (including swap) in KBytes
     declare -r VSZ=$(awk -v t=0 '/^(Mem|Swap)Total:/ {t+=$2} END {print t}' < /proc/meminfo)
     declare -r PSZ=$(getconf PAGESIZE)
@@ -104,7 +104,7 @@ tune_preparation() {
         min=${name}_MIN
         req=${name}_REQ
         val=${!name}
-        if [ ! "${!req}" -o $( math_test "${!req} < $val" ) ]; then
+	if [ ! "${!req}" -o $( math_test "${!req} < $val" ) ]; then
             declare $req="$val"
         fi
         if [ $( math_test "${!req} < ${!min}" ) ]; then
@@ -120,19 +120,19 @@ tune_preparation() {
     fi
 
     # Tune kernel parameters
-    if [ "respect_tuned_file kernel.shmmax $cfg_file" == "no" ]; then
+    if [ "`respect_tuned_file kernel.shmmax $cfg_file`" == "no" ]; then
         save_value kernel.shmmax "$SHMMAX"
         sysctl -w kernel.shmmax="$SHMMAX_REQ"
     fi
-    if [ "respect_tuned_file kernel.sem $cfg_file" == "no" ]; then
+    if [ "`respect_tuned_file kernel.sem $cfg_file`" == "no" ]; then
         save_value kernel.sem "$(sysctl -n kernel.sem)"
         sysctl -w kernel.sem="$SEMMSL_REQ $SEMMNS_REQ $SEMOPM_REQ $SEMMNI_REQ"
     fi
-    if [ "respect_tuned_file kernel.shmall $cfg_file" == "no" ]; then
+    if [ "`respect_tuned_file kernel.shmall $cfg_file`" == "no" ]; then
         save_value kernel.shmall "$SHMALL"
         sysctl -w kernel.shmall="$SHMALL_REQ"
     fi
-    if [ "respect_tuned_file vm.max_map_count $cfg_file" == "no" ]; then
+    if [ "`respect_tuned_file vm.max_map_count $cfg_file`" == "no" ]; then
         save_value vm.max_map_count "$MAX_MAP_COUNT"
         sysctl -w vm.max_map_count="$MAX_MAP_COUNT_REQ"
     fi
