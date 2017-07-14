@@ -52,8 +52,7 @@ write_log() {
 tune_preparation() {
     log_file=""
     [ -f /var/log/tuned/tuned.log ] && log_file=/var/log/tuned/tuned.log
-    cfg_file=`caller | awk '{print $2} | sed 's#script.sh#tuned.conf#'`
-    cfg_file=${cfg_file#*[[:space:]]}
+    cfg_file=`caller | awk '{print $2}' | sed 's#script.sh#tuned.conf#'`
     # Read total memory size (including swap) in KBytes
     declare -r VSZ=$(awk -v t=0 '/^(Mem|Swap)Total:/ {t+=$2} END {print t}' < /proc/meminfo)
     declare -r PSZ=$(getconf PAGESIZE)
