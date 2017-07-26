@@ -11,7 +11,7 @@ cd /usr/lib/sapconf || exit 1
 
 # tune_preparation applies tuning techniques from "1275776 - Preparing SLES for SAP" and "1984787 - Installation notes".
 tune_preparation() {
-    log "Applying tuning techniques that are universally applied to many SAP softwares"
+    log "--- Going to apply universal tuning techniques"
 
     # Bunch of variables declared in upper case
     # The _REQ variables store optimal values calculated via SAP's formula
@@ -129,10 +129,12 @@ tune_preparation() {
    echo "[Login]
 UserTasksMax=infinity" > /etc/systemd/logind.conf.d/sap.conf
     log "Please reboot the system for the UserTasksMax change to become effective"
+    log "--- Finished application of universal tuning techniques"
 }
 
-# Revert some tuning operations conducted by "1275776 - Preparing SLES for SAP" and "1984787 - Installation notes".
+# revert_preparation reverts tuning operations conducted by "1275776 - Preparing SLES for SAP" and "1984787 - Installation notes".
 revert_preparation() {
+    log "--- Going to revert universally tuned parameters"
     # Restore tuned kernel parameters
     SHMMAX=$(restore_value kernel.shmmax)
     [ "$SHMMAX" ] && log "Restoring kernel.shmmax=$SHMMAX" && sysctl -w kernel.shmmax="$SHMMAX"
@@ -151,4 +153,125 @@ revert_preparation() {
     TMPFS_SIZE=$(restore_value tmpfs.size)
     TMPFS_OPTS=$(restore_value tmpfs.mount_opts)
     [ "$TMPFS_SIZE" -a -e /dev/shm ] && mount -o "remount,${TMPFS_OPTS},size=${TMPFS_SIZE}k" /dev/shm
+    log "--- Finished reverting universally tuned parameters"
+}
+
+# tune_page_cache_limit_netweaver optimises page cache limit according to Netweaver's recommendation in "1557506 - Linux paging improvements".
+tune_page_cache_limit_netweaver() {
+    log "--- Going to tune page cache limit using Netweaver's recommendation"
+    declare ENABLE_PAGECACHE_LIMIT="no"
+    declare OVERRIDE_PAGECACHE_LIMIT_MB="0"
+    declare PAGECACHE_LIMIT_IGNORE_DIRTY="0"
+    # The configuration file should overwrite the three parameters above
+    source /etc/sysconfig/sapnote-1557506
+    # Calculate new limit value
+    declare new_val
+    if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
+		declare -r MEMSIZE_GB=$( math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024" )
+		if [ $(math_test "$MEMSIZE_GB < 16") ]; then
+		    new_val=512
+		elif [ $(math_test "$MEMSIZE_GB < 32") ]; then
+		    new_val=1024
+		elif [  $(math_test "$MEMSIZE_GB < 64") ]; then
+		    new_val=2048
+		else
+		    new_val=4096
+		fi
+        # If override is present, use the override value.
+        [ "$OVERRIDE_PAGECACHE_LIMIT_MB" ] && new_val="$OVERRIDE_PAGECACHE_LIMIT_MB"
+        save_value vm.pagecache_limit_mb $(sysctl -n vm.pagecache_limit_mb)
+        log "Setting vm.pagecache_limit_mb=$new_val"
+        sysctl -w "vm.pagecache_limit_mb=$new_val"
+        # Set ignore_dirty
+        save_value vm.pagecache_limit_ignore_dirty $(sysctl -n vm.pagecache_limit_ignore_dirty)
+        log "Setting vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
+        sysctl -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
+    else
+        # Disable pagecache limit by setting it to 0
+        save_value vm.pagecache_limit_mb $(sysctl -n vm.pagecache_limit_mb)
+        log "Disabling page cache limit"
+        sysctl -w "vm.pagecache_limit_mb=0"
+    fi
+    log "--- Finished application of page cache limit using Netweaver's recommendation"
+}
+
+# tune_page_cache_limit_hana optimises page cache limit according to HANA's recommendation in "1557506 - Linux paging improvements".
+tune_page_cache_limit_hana() {
+    log "--- Going to tune page cache limit using HANA's recommendation"
+    declare ENABLE_PAGECACHE_LIMIT="no"
+    declare OVERRIDE_PAGECACHE_LIMIT_MB="0"
+    declare PAGECACHE_LIMIT_IGNORE_DIRTY="0"
+    # The configuration file should overwrite the three parameters above
+    source /etc/sysconfig/sapnote-1557506
+    # Calculate new limit value
+    declare new_val
+    if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
+        declare -r MEMSIZE=$(math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024")
+		# Set pagecache limit = 2% of system memory
+        declare PAGECACHE_LIMIT_NEW=$(math "$MEMSIZE*1024*2/100")
+        # If override is present, use the override value.
+        [ "$OVERRIDE_PAGECACHE_LIMIT_MB" ] && new_val="$OVERRIDE_PAGECACHE_LIMIT_MB"
+        save_value vm.pagecache_limit_mb $(sysctl -n vm.pagecache_limit_mb)
+        log "Setting vm.pagecache_limit_mb=$new_val"
+        sysctl -w "vm.pagecache_limit_mb=$new_val"
+        # Set ignore_dirty
+        save_value vm.pagecache_limit_ignore_dirty $(sysctl -n vm.pagecache_limit_ignore_dirty)
+        log "Setting vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
+        sysctl -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
+    else
+        # Disable pagecache limit by setting it to 0
+        save_value vm.pagecache_limit_mb $(sysctl -n vm.pagecache_limit_mb)
+        log "Disabling page cache limit"
+        sysctl -w "vm.pagecache_limit_mb=0"
+    fi
+    log "--- Finished application of page cache limit using HANA's recommendation"
+}
+
+# revert_page_cache_limit reverts page cache limit parameter value tuned by either Netweaver or HANA recommendation.
+revert_page_cache_limit() {
+    log "--- Going to revert page cache limit"
+    # Restore pagecahce settings
+    PAGECACHE_LIMIT=$(restore_value vm.pagecache_limit_mb)
+    [ "$PAGECACHE_LIMIT" ] && log "Restoring vm.pagecache_limit_mb=$PAGECACHE_LIMIT" && sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT"
+    PAGECACHE_LIMIT_IGNORE_DIRTY=$(restore_value vm.pagecache_limit_ignore_dirty)
+    [ "$PAGECACHE_LIMIT_IGNORE_DIRTY" ] && log "Restoring vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY" && sysctl -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
+    log "--- Finished reverting page cache limit"
+}
+
+# tune_uuidd_socket unconditionally enables and starts uuidd.socket as recommended in "1984787 - Installation notes".
+tune_uuidd_socket() {
+    log "--- Going to enable uuidd.socket"
+    if ! systemctl is-active uuidd.socket; then
+        save_value uuidd 1
+        systemctl enable uuidd.socket
+        systemctl start uuidd.socket
+    fi
+}
+
+# revert_uuidd_socket reverts uuidd.socket to disabled state.
+revert_uuidd_socket() {
+    UUIDD=$(restore_value uuidd)
+    [ "$UUIDD" ] && log "Revert uuidd.socket to disabled state" && systemctl disable uuidd.socket && systemctl stop uuidd.socket
+}
+
+# tune_shmmni_hana calculates and applies an optimised value for kernel.shmmni parameter.
+tune_shmmni_hana() {
+    log "--- Going to tune kernel.shmmni using HANA's recommendation"
+    declare -r MEMSIZE=$(math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024")
+    declare SHMMNI_NEW
+    if [ $(math_test "$MEMSIZE < 64") ]; then
+        declare SHMMNI_NEW=4096
+    elif [ $(math_test "$MEMSIZE < 256") ]; then
+        declare SHMMNI_NEW=65536
+    else
+        declare SHMMNI_NEW=524288
+    fi
+    save_value kernel.shmmni $(sysctl -n kernel.shmmni)
+    increase_sysctl kernel.shmmni "$SHMMNI_NEW"
+}
+
+# revert_shmmni reverts kernel.shmmni value to previous state.
+revert_shmmni() {
+    SHMMNI=$(restore_value kernel.shmmni)
+    [ "$SHMMNI" ] && log "Restoring kernel.shmmni=$SHMMNI" && sysctl -w "kernel.shmmni=$SHMMNI"
 }

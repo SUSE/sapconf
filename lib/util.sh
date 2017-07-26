@@ -32,6 +32,7 @@ increase_sysctl() {
     declare -r current_val=$(sysctl -n "$param")
     if [ $(math_test "$current_val < $new_val") ]; then
         log "Increasing $param from $current_val to $new_val"
+        sysctl -w "$param=$new_val"
         echo -n "$new_val"
     else
         log "Leaving $param unchanged at $current_val instead of calculated $new_val"

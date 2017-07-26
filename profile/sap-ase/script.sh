@@ -2,52 +2,21 @@
 # Optimise kernel parameters for running SAP ASE.
 # The calculations are based on:
 # - Various SAP notes.
-# For SAP HANA tuning, please use "sap-hana" profile instead.
-# For SAP Netweaver tuning, please use "sap-netweaver" profile instead of this one.
 
-. /usr/lib/sapconf/common.sh
+cd /usr/lib/sapconf || exit 1
+. util.sh
+. common.sh
 
 start() {
+    log "--- Going to apply ASE tuning techniques"
     # Apply tuning techniques from 1275776 - Preparing SLES for SAP and 1984787 - Installation notes
     tune_preparation
-    # Read system memory size in MB
-    declare -r MEMSIZE=$( math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024" )
-    # Determine an appropriate value for kernel.shmmni
-    declare SHMMNI=$(sysctl -n kernel.shmmni)
-    if [ $( math_test "$MEMSIZE < 64" ) ]; then
-        declare SHMMNI_NEW=4096
-    elif [ $( math_test "$MEMSIZE < 256" ) ]; then
-        declare SHMMNI_NEW=65536
-    else
-        declare SHMMNI_NEW=524288
-    fi
-    # New SHMMNI may not be lower than current settings
-    if [ $( math_test "$SHMMNI_NEW < $SHMMNI" ) ]; then
-        declare SHMMNI_NEW="$SHMMNI"
-    fi
-
-    # Apply new SHMMNI value
-    save_value kernel.shmmni "$SHMMNI"
-    sysctl -w "kernel.shmmni=$SHMMNI_NEW"
-
     # SAP note 1557506 - Linux paging improvements
-    source /etc/sysconfig/sapnote-1557506
-    declare -r PAGECACHE_LIMIT=$(sysctl -n vm.pagecache_limit_mb)
-    if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
-        # Set pagecache limit = 2% of system memory
-        declare PAGECACHE_LIMIT_NEW=$( math "$MEMSIZE*1024*2/100" )
-        # If override is present, use the override value.
-        [ "$OVERRIDE_PAGECACHE_LIMIT_MB" ] && declare PAGECACHE_LIMIT_NEW="$OVERRIDE_PAGECACHE_LIMIT_MB"
-        save_value vm.pagecache_limit_mb "$PAGECACHE_LIMIT"
-        sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT_NEW"
-        # Set ignore_dirty
-        save_value vm.pagecache_limit_ignore_dirty "$(sysctl -n vm.pagecache_limit_ignore_dirty)"
-        sysctl -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
-    else
-        # Disable pagecache limit by setting it to 0
-        save_value vm.pagecache_limit_mb "$PAGECACHE_LIMIT"
-        sysctl -w "vm.pagecache_limit_mb=0"
-    fi
+    tune_page_cache_limit_hana
+    # SAP note 1984787 - Installation notes
+    tune_uuidd_socket
+
+    tune_shmmni_hana
 
     # SAP note 1680803 - best practice
     source /etc/sysconfig/sapnote-1680803
@@ -81,29 +50,87 @@ start() {
         save_value "memlock_$ulimit_type" "$save_limit"
     done
 
-    # SAP note 1984787 - Installation notes
-    # Turn on UUIDD
-    if ! systemctl is-active uuidd.socket; then
-        save_value uuidd 1
-        systemctl enable uuidd.socket
-        systemctl start uuidd.socket
-    fi
 
+    # 1410736
+    save_value net.ipv4.tcp_keepalive_time $(sysctl -n net.ipv4.tcp_keepalive_time)
+    increase_sysctl net.ipv4.tcp_keepalive_time 300
+    save_value net.ipv4.tcp_keepalive_intvl $(sysctl -n net.ipv4.tcp_keepalive_intvl)
+    increase_sysctl net.ipv4.tcp_keepalive_intvl 300
+
+    # 1680803
+    save_value fs.aio-max-nr $(sysctl -n fs.aio-max-nr)
+    increase_sysctl fs.aio-max-nr 1048576
+    save_value fs.file-max $(sysctl -n fs.file-max)
+    increase_sysctl fs.file-max 6291456
+
+    # Increase Linux autotuning TCP buffer limits
+    # Set max to 16MB (16777216) for 1GE and 32M (33554432) or 54M (56623104) for 10GE
+    # Don't set tcp_mem itself! Let the kernel scale it based on RAM.
+    save_value net.core.rmem_max $(sysctl -n net.core.rmem_max)
+    increase_sysctl net.core.rmem_max 6291456
+    save_value net.core.wmem_max $(sysctl -n net.core.wmem_max)
+    increase_sysctl net.core.wmem_max 6291456
+    save_value net.core.rmem_default $(sysctl -n net.core.rmem_default)
+    increase_sysctl net.core.rmem_default 6291456
+    save_value net.core.wmem_default $(sysctl -n net.core.wmem_default)
+    increase_sysctl net.core.wmem_default 6291456
+    save_value net.core.netdev_max_backlog $(sysctl -n net.core.netdev_max_backlog)
+    increase_sysctl net.core.netdev_max_backlog 30000
+
+    # If the server is a heavily used application server, e.g. a Database, it would
+    # benefit significantly by using Huge Pages.
+    # The default size of Huge Page in SLES is 2 MB, enabling Huge Pages would aid
+    # in significant improvements for Memory Intensive Applications/Databases,
+    # HPC Machines, this configuration needs to be done if the Applications support
+    # Huge Pages. If the Applications do not support Huge Pages then configuring
+    # Huge Pages would result in wastage of memory as it cannot be used any further
+    # by the OS.
+    save_value vm.nr_hugepages $(sysctl -n vm.nr_hugepages)
+    increase_sysctl vm.nr_hugepages 128
+
+    # The following parameters were specified in tuned.conf before 2017-07-25, but are removed from tuned.conf
+    # because they are redundant or no formula exists to calculate them automatically:
+    # vm.dirty_ratio = 10
+    # vm.dirty_background_ratio = 3
+    # kernel.sem = 1250 256000 100 8192
+    # kernel.sched_min_granularity_ns = 10000000
+    # kernel.sched_wakeup_granularity_ns = 15000000
+
+    log "--- Finished application of ASE tuning techniques"
     return 0
 }
 
 stop() {
-    # Revert tuning techniques from 1275776 - Preparing SLES for SAP and 1984787 - Installation notes
+    log "--- Going to revert ASE tuned parameters"
     revert_preparation
+    revert_page_cache_limit
+    revert_uuidd_socket
+    revert_shmmni
 
-    SHMMNI=$(restore_value kernel.shmmni)
-    [ "$SHMMNI" ] && sysctl -w "kernel.shmmni=$SHMMNI"
+    val=$(restore_value net.ipv4.tcp_keepalive_time)
+    [ "$val" ] && log "Restoring net.ipv4.tcp_keepalive_time=$val" && sysctl -w "net.ipv4.tcp_keepalive_time=$val"
+    val=$(restore_value net.ipv4.tcp_keepalive_intvl)
+    [ "$val" ] && log "Restoring net.ipv4.tcp_keepalive_intvl=$val" && sysctl -w "net.ipv4.tcp_keepalive_intvl=$val"
 
-    # Restore pagecache limit settings
-    PAGECACHE_LIMIT=$(restore_value vm.pagecache_limit_mb)
-    [ "$PAGECACHE_LIMIT" ] && sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT"
-    PAGECACHE_LIMIT_IGNORE_DIRTY=$(restore_value vm.pagecache_limit_ignore_dirty)
-    [ "$PAGECACHE_LIMIT_IGNORE_DIRTY" ] && sysctl -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
+    val=$(restore_value fs.aio-max-nr)
+    [ "$val" ] && log "Restoring fs.aio-max-nr=$val" && sysctl -w "fs.aio-max-nr=$val"
+    val=$(restore_value fs.file-max)
+    [ "$val" ] && log "Restoring fs.file-max=$val" && sysctl -w "fs.file-max=$val"
+
+
+    val=$(restore_value net.core.rmem_max)
+    [ "$val" ] && log "Restoring net.core.rmem_max=$val" && sysctl -w "net.core.rmem_max=$val"
+    val=$(restore_value net.core.wmem_max)
+    [ "$val" ] && log "Restoring net.core.wmem_max=$val" && sysctl -w "net.core.wmem_max=$val"
+    val=$(restore_value net.core.rmem_default)
+    [ "$val" ] && log "Restoring net.core.rmem_default=$val" && sysctl -w "net.core.rmem_default=$val"
+    val=$(restore_value net.core.wmem_default)
+    [ "$val" ] && log "Restoring net.core.wmem_default=$val" && sysctl -w "net.core.wmem_default=$val"
+    val=$(restore_value net.core.netdev_max_backlog)
+    [ "$val" ] && log "Restoring net.core.netdev_max_backlog=$val" && sysctl -w "net.core.netdev_max_backlog=$val"
+
+    val=$(restore_value vm.nr_hugepages)
+    [ "$val" ] && log "Restoring vm.nr_hugepages=$val" && sysctl -w "vm.nr_hugepages=$val"
 
     # Restore number of requests for block devices (sdX)
     for _dev in `ls -d /sys/block/sd*`; do
@@ -124,10 +151,7 @@ stop() {
         echo "$restore_line" >> /etc/security/limits.conf
     done
 
-    # Restore UUIDD
-    UUIDD=$(restore_value uuidd)
-    [ "$UUIDD" ] && systemctl disable uuidd.socket && systemctl stop uuidd.socket
-
+    log "--- Finished reverting ASE tuned parameters"
     return 0
 }
 
