@@ -19,7 +19,7 @@ log() {
     # Give log message to standard error so that:
     # it enjoys unbuffered output;
     # a function that uses "echo" to make return value will not be affected by log output
-    echo "$msg" > 2
+    echo "$msg" 1>&2
     echo "$msg" >> /var/log/sapconf
 }
 
