@@ -20,7 +20,7 @@ log() {
     # it enjoys unbuffered output;
     # a function that uses "echo" to make return value will not be affected by log output
     echo "$msg" 1>&2
-    echo "$msg" >> /var/log/sapconf
+    echo "$msg" >> /var/log/sapconf.log
 }
 
 # increase_sysctl gives sysctl parameter $1 a new value $2 only if it is not lower than the current value.
