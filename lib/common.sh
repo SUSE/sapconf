@@ -30,9 +30,8 @@ tune_preparation() {
     declare SEMOPM_MIN=0
     declare SEMMNI_MIN=0
 
-    # MAX_MAP_COUNT is by default 2147483647 (SAP-Note 900929), sysconfig file may override the _MIN value.
+    # MAX_MAP_COUNT is by default 2147483647 (SAP-Note 900929)
     declare MAX_MAP_COUNT_REQ=2147483647
-    declare MAX_MAP_COUNT_MIN=0
     # VSZ_TMPFS_PERCENT is by default 75, sysconfig file may override this value. There is no _MIN for this variable.
     declare VSZ_TMPFS_PERCENT=75
 
@@ -75,7 +74,6 @@ tune_preparation() {
     # Some of the recommended values are coded in the sysconfig file in _MIN variables
     # The minimal values are redundant in nature, they no longer exist in saptune.
     TMPFS_SIZE_REQ=$(increase_val "TMPFS_SIZE_REQ" "$TMPFS_SIZE_REQ" "$TMPFS_SIZE_MIN")
-    MAX_MAP_COUNT_REQ=$(increase_val "MAX_MAP_COUNT_REQ" "$MAX_MAP_COUNT_REQ" "$MAX_MAP_COUNT_MIN")
     SHMALL_REQ=$(increase_val "SHMALL_REQ" "$SHMALL_REQ" "$SHMALL_MIN")
     SHMMAX_REQ=$(increase_val "SHMMAX_REQ" "$SHMMAX_REQ" "$SHMMAX_MIN")
     # There is only one semaphore control variable and it has four fields, so deal with each field separately.
