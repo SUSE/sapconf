@@ -30,8 +30,8 @@ tune_preparation() {
     declare SEMOPM_MIN=0
     declare SEMMNI_MIN=0
 
-    # MAX_MAP_COUNT is by default 2000000, sysconfig file may override the _MIN value.
-    declare MAX_MAP_COUNT_REQ=2000000
+    # MAX_MAP_COUNT is by default 2147483647 (SAP-Note 900929), sysconfig file may override the _MIN value.
+    declare MAX_MAP_COUNT_REQ=2147483647
     declare MAX_MAP_COUNT_MIN=0
     # VSZ_TMPFS_PERCENT is by default 75, sysconfig file may override this value. There is no _MIN for this variable.
     declare VSZ_TMPFS_PERCENT=75
