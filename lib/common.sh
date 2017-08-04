@@ -124,8 +124,13 @@ tune_preparation() {
    # Amend logind's behaviour (bsc#1031355, bsc#1039309, bsc#1043844), there is no rollback in revert function.
    log "Set the maximum number of OS tasks each user may run concurrently (UserTasksMax) to 'infinity'"
    mkdir -p /etc/systemd/logind.conf.d
+   if [ "$(grep ^VERSION_ID= /etc/os-release | awk -F \" '{print $2}')" == "12.1" ]; then
+	_UserTasksMax_="1000000"
+   else
+	_UserTasksMax_="infinity"
+   fi
    echo "[Login]
-UserTasksMax=infinity" > /etc/systemd/logind.conf.d/sap.conf
+UserTasksMax=$_UserTasksMax_" > /etc/systemd/logind.conf.d/sap.conf
     log "Please reboot the system for the UserTasksMax change to become effective"
     log "--- Finished application of universal tuning techniques"
 }
