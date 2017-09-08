@@ -96,8 +96,8 @@ tune_preparation() {
     save_value kernel.shmall $(sysctl -n kernel.shmall)
     increase_sysctl kernel.shmall "$SHMALL_REQ"
     # Tweak semaphore
-    save_value kernel.sem $(sysctl -n kernel.sem)
-    sysctl -w kernel.sem "$SEMMSL $SEMMNS $SEMOPM $SEMMNI"
+    save_value kernel.sem "$(sysctl -n kernel.sem)"
+    sysctl -w "kernel.sem=$SEMMSL $SEMMNS $SEMOPM $SEMMNI"
     # Tweak max_map_count
     save_value vm.max_map_count $(sysctl -n vm.max_map_count)
     increase_sysctl vm.max_map_count "$MAX_MAP_COUNT_REQ"
@@ -208,7 +208,7 @@ tune_page_cache_limit_hana() {
     if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
         declare -r MEMSIZE=$(math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024")
 		# Set pagecache limit = 2% of system memory
-        declare PAGECACHE_LIMIT_NEW=$(math "$MEMSIZE*1024*2/100")
+        new_val=$(math "$MEMSIZE*1024*2/100")
         # If override is present, use the override value.
         [ "$OVERRIDE_PAGECACHE_LIMIT_MB" ] && new_val="$OVERRIDE_PAGECACHE_LIMIT_MB"
         save_value vm.pagecache_limit_mb $(sysctl -n vm.pagecache_limit_mb)
