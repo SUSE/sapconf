@@ -12,11 +12,13 @@ start() {
     # Apply tuning techniques from 1275776 - Preparing SLES for SAP and 1984787 - Installation notes
     tune_preparation
     # SAP note 1557506 - Linux paging improvements
-    tune_page_cache_limit_hana
+    tune_page_cache_limit
     # SAP note 1984787 - Installation notes
     tune_uuidd_socket
 
-    tune_shmmni_hana
+    # SAP Note 2534844, bsc#874778
+    save_value kernel.shmmni $(sysctl -n kernel.shmmni)
+    increase_sysctl kernel.shmmni 32768
 
     # SAP note 1680803 - best practice
     source /etc/sysconfig/sapnote-1680803

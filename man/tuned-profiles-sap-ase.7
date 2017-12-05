@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2016 SUSE LINUX GmbH, Nuernberg, Germany.
+.\" * Copyright (c) 2016, 2017 SUSE LINUX GmbH, Nuernberg, Germany.
 .\" * Authors: Angela Briel <abriel@suse.com>
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH TUNED_PROFILES_SAP_ASE "7" "26 Apr 2017" "Adaptive system tuning daemon" "tuned"
+.TH TUNED_PROFILES_SAP_ASE "7" "December 2017" "Adaptive system tuning daemon" "tuned"
 .SH NAME
 tuned\-profiles\-sap\-ase - Tuning profile for SAP ASE (Sybase).
 
@@ -22,21 +22,37 @@ tuned\-profiles\-sap\-ase - Tuning profile for SAP ASE (Sybase).
 The tuning profile automatically optimises kernel parameters and system configuration for running SAP ASE (Sybase) softwares.
 
 The following parameters are calculated and tuned, according to various SAP notes and best practices:
+
 .IP \[bu]
-Semaphores: kernel.semmni
+Semaphores: kernel.sem
+.IP \[bu]
+Shared memory: kernel.shmall, kernel.shmmax, kernel.shmmni
+.IP \[bu]
+Size of tmpfs
+.IP \[bu]
+Maximum number of memory mapping regions: vm.max_map_count
+.IP \[bu]
+Maximum number of open file descriptors in /etc/security/limits.conf
+.IP \[bu]
+Set the maximum number of OS tasks each user may run concurrently (UserTasksMax)
 .IP \[bu]
 Pagecache limit: vm.pagecache_limit_mb, pagecache_limit_ignore_dirty
 .IP \[bu]
-Set number of requests for block devices: /sys/block/sd*/queue/nr_requests
+Set number of requests for block devices:
+.br /sys/block/sd*/queue/nr_requests
 .IP \[bu]
 Set memlock for user sybase: /etc/security/limits.conf
+.IP \[bu]
+Set net.ipv4.tcp_keepalive_time, net.ipv4.tcp_keepalive_intvl as requested in SAP note 1410736
+.IP \[bu]
+Set fs.aio-max-nr, fs.file-max, net.core.rmem_max, net.core.wmem_max, net.core.rmem_default, net.core.wmem_default, net.core.netdev_max_backlog, vm.nr_hugepages, vm.swappiness, net.ipv4.tcp_rmem, net.ipv4.tcp_wmem and transparent_hugepages as requested in SAP note 1680803
 .IP \[bu]
 CPU power management, disk cache, kernel scheduling and VM tweaks (inherited from throughput-performance profile).
 .IP \[bu]
 Enable uuidd.socket.
 
 .SH "SAP NOTES"
-The tuned parameters are calculated according to SAP note number 1275776, 1984787, 1557506, 1410736, 1680803.
+The tuned parameters are calculated according to SAP note number 1275776, 1984787, 1557506, 2534844, 1410736, 1680803.
 
 .SH ACTIVATION
 To activate the SAP ASE tuning profile, run as root:
@@ -45,17 +61,24 @@ tuned-adm profile sap-ase
 
 .SH "FILES"
 .PP
-\fI/etc/sysconfig/sapnote\-1557506\fR
+\fI/etc/sysconfig/sapconf\fR
 .RS 4
-Define the behaviour and overrides for tuning pagecache limit.
+Define the behaviour and overrides for the common settings from 1275776 and tuning pagecache limit.
 .RE
 .PP
 \fI/etc/sysconfig/sapnote\-1680803\fR
 .RS 4
 Define the behaviour and overrides for tuning memlock and nr_request.
 .RE
+.PP
+\fI/usr/lib/tuned/sap-ase/tuned.conf\fR
+.RS 4
+Define vm.swappiness, net.ipv4.tcp_rmem, net.ipv4.tcp_wmem
+.RE
 
 .SH "SEE ALSO"
+.BR sapconf (5)
+.BR sapconf (7)
 .BR tuned (8)
 .BR tuned\-adm (8)
 .SH AUTHOR

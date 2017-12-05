@@ -2,7 +2,7 @@
 #
 # /usr/sbin/sapconf
 #
-# Copyright (c) 2015 SUSE LINUX GmbH, Nuernberg, Germany.
+# Copyright (c) 2015-2017 SUSE LINUX GmbH, Nuernberg, Germany.
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -37,10 +37,25 @@ case "$1" in
     # To remain compatible with the original implementation of sapconf,
     # if neither sap-netweaver nor sap-hana is active, sap-netwever profile
     # will be activiated via tune daemon.
+    # changed behaviour because of bsc#1026862
+    # activate sap-netwever profile only if no other profile is active
     echo 'Forwarding action to tuned-adm.'
-    if [[ $(cat /etc/tuned/active_profile) != sap* ]]; then
+    # bsc#1026862
+    #if [[ $(cat /etc/tuned/active_profile) != sap* ]]; then
+    if [[ $(cat /etc/tuned/active_profile) == "" ]]; then
       tuned-adm profile sap-netweaver &> /dev/null
     fi
+    if ! systemctl status tuned &> /dev/null; then
+      systemctl start tuned
+    fi
+    systemctl status tuned &> /dev/null && exit 0 || exit 1
+  ;;
+
+  netweaver)
+    # This is a new option, an extension to the traditional sapconf.
+    # It activates Netweaver tuning profile via the tune daemon.
+    echo 'Forwarding action to tuned-adm.'
+    tuned-adm profile sap-netweaver &> /dev/null
     if ! systemctl status tuned &> /dev/null; then
       systemctl start tuned
     fi

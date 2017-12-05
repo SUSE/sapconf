@@ -10,7 +10,7 @@ start() {
     # Apply tuning techniques from 1275776 - Preparing SLES for SAP and 1984787 - Installation notes
     tune_preparation
     # SAP note 1557506 - Linux paging improvements
-    tune_page_cache_limit_netweaver
+    tune_page_cache_limit
     # SAP note 1984787 - Installation notes
     tune_uuidd_socket
 

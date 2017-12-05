@@ -15,7 +15,7 @@ tune_preparation() {
 
     # Bunch of variables declared in upper case
     # The _REQ variables store optimal values calculated via SAP's formula
-    # The _MIN variables are minimum boundaries defined in sysconfig - quite useless really
+    # The _MIN and _DEF variables are value definitions read from sysconfig file
     declare TMPFS_SIZE_REQ=0
     declare TMPFS_SIZE_MIN=0
 
@@ -30,12 +30,13 @@ tune_preparation() {
     declare SEMOPM_MIN=0
     declare SEMMNI_MIN=0
 
-    # MAX_MAP_COUNT is by default 2147483647 (SAP-Note 900929)
-    declare MAX_MAP_COUNT_REQ=2147483647
-    # VSZ_TMPFS_PERCENT is by default 75, sysconfig file may override this value. There is no _MIN for this variable.
+    # MAX_MAP_COUNT is set in sysconfig file to (MAX_INT) 2147483647
+    # (SAP-Note 900929)
+    declare MAX_MAP_COUNT_DEF=0
+    # VSZ_TMPFS_PERCENT is by default 75, sysconfig file may override this value. There is no _MIN or _DEF for this variable.
     declare VSZ_TMPFS_PERCENT=75
 
-    # Read minimal value requirements from sysconfig, the declarations will override _MIN variables above.
+    # Read minimal value requirements from sysconfig, the declarations will override _MIN and _DEF variables above.
     if [ -r /etc/sysconfig/sapconf ]; then
         source /etc/sysconfig/sapconf
     else
@@ -72,7 +73,6 @@ tune_preparation() {
     declare SHMMAX_REQ=$(math "$VSZ*1024")
     declare TMPFS_SIZE_REQ=$(math "$VSZ*$VSZ_TMPFS_PERCENT/100")
     # Some of the recommended values are coded in the sysconfig file in _MIN variables
-    # The minimal values are redundant in nature, they no longer exist in saptune.
     TMPFS_SIZE_REQ=$(increase_val "TMPFS_SIZE_REQ" "$TMPFS_SIZE_REQ" "$TMPFS_SIZE_MIN")
     SHMALL_REQ=$(increase_val "SHMALL_REQ" "$SHMALL_REQ" "$SHMALL_MIN")
     SHMMAX_REQ=$(increase_val "SHMMAX_REQ" "$SHMMAX_REQ" "$SHMMAX_MIN")
@@ -100,7 +100,7 @@ tune_preparation() {
     sysctl -w "kernel.sem=$SEMMSL $SEMMNS $SEMOPM $SEMMNI"
     # Tweak max_map_count
     save_value vm.max_map_count $(sysctl -n vm.max_map_count)
-    increase_sysctl vm.max_map_count "$MAX_MAP_COUNT_REQ"
+    increase_sysctl vm.max_map_count "$MAX_MAP_COUNT_DEF"
 
     # Tune ulimits for the max number of open files (rollback is not necessary in revert function)
     all_nofile_limits=""
@@ -121,15 +121,27 @@ tune_preparation() {
         done
     done
 
-   if [ "$(grep ^VERSION_ID= /etc/os-release | awk -F \" '{print $2}')" != "12.1" ]; then
+   if [ "$(grep ^VERSION_ID= /etc/os-release | awk -F \" '{print $2}')" != "12.1" -a -n "$USERTASKSMAX" ]; then
         # Amend logind's behaviour (bsc#1031355, bsc#1039309, bsc#1043844), there is no rollback in revert function.
-        log "Set the maximum number of OS tasks each user may run concurrently (UserTasksMax) to 'infinity'"
+        log "Set the maximum number of OS tasks each user may run concurrently (UserTasksMax) to '$USERTASKSMAX'"
+        change_sap_conf=true
+        SAP_LOGIN_FILE=/etc/systemd/logind.conf.d/sap.conf
         mkdir -p /etc/systemd/logind.conf.d
-        echo "[Login]
-UserTasksMax=infinity" > /etc/systemd/logind.conf.d/sap.conf
-         log "Please reboot the system for the UserTasksMax change to become effective"
-         log "--- Finished application of universal tuning techniques"
+        if [ -f $SAP_LOGIN_FILE ]; then
+            grep "^[[:blank:]]*UserTasksMax[[:blank:]]*=[[:blank:]]*$USERTASKSMAX" $SAP_LOGIN_FILE > /dev/null 2>&1
+            if [ "$?" -eq 0 ]; then
+                # everything ok, UserTasksMax already set to infinity
+                change_sap_conf=false
+                log "With this setting your system is vulnerable to fork bomb attacks."
+            fi
+        fi
+        if $change_sap_conf; then
+            echo "[Login]
+UserTasksMax=$USERTASKSMAX" > $SAP_LOGIN_FILE
+            log "Please reboot the system or restart systemd-logind daemon for the UserTasksMax change to become effective"
+        fi
    fi
+   log "--- Finished application of universal tuning techniques"
 }
 
 # revert_preparation reverts tuning operations conducted by "1275776 - Preparing SLES for SAP" and "1984787 - Installation notes".
@@ -156,32 +168,28 @@ revert_preparation() {
     log "--- Finished reverting universally tuned parameters"
 }
 
-# tune_page_cache_limit_netweaver optimises page cache limit according to Netweaver's recommendation in "1557506 - Linux paging improvements".
-tune_page_cache_limit_netweaver() {
-    log "--- Going to tune page cache limit using Netweaver's recommendation"
+# tune_page_cache_limit optimises page cache limit according to recommendation in "1557506 - Linux paging improvements".
+tune_page_cache_limit() {
+    log "--- Going to tune page cache limit using the recommendations defined in /etc/sysconfig/sapconf"
     declare ENABLE_PAGECACHE_LIMIT="no"
-    declare OVERRIDE_PAGECACHE_LIMIT_MB="0"
-    declare PAGECACHE_LIMIT_IGNORE_DIRTY="0"
     # The configuration file should overwrite the three parameters above
-    source /etc/sysconfig/sapnote-1557506
-    # Calculate new limit value
-    declare new_val
+    if [ -r /etc/sysconfig/sapconf ]; then
+        source /etc/sysconfig/sapconf
+    fi
     if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
-		declare -r MEMSIZE_GB=$( math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024" )
-		if [ $(math_test "$MEMSIZE_GB < 16") ]; then
-		    new_val=512
-		elif [ $(math_test "$MEMSIZE_GB < 32") ]; then
-		    new_val=1024
-		elif [  $(math_test "$MEMSIZE_GB < 64") ]; then
-		    new_val=2048
-		else
-		    new_val=4096
-		fi
-        # If override is present, use the override value.
-        [ "$OVERRIDE_PAGECACHE_LIMIT_MB" ] && new_val="$OVERRIDE_PAGECACHE_LIMIT_MB"
+        if [ -z "$PAGECACHE_LIMIT_MB" ]; then
+                log "ATTENTION: PAGECACHE_LIMIT_MB not set in sysconfig file."
+                log "Disabling page cache limit"
+                PAGECACHE_LIMIT_MB="0"
+        fi
         save_value vm.pagecache_limit_mb $(sysctl -n vm.pagecache_limit_mb)
-        log "Setting vm.pagecache_limit_mb=$new_val"
-        sysctl -w "vm.pagecache_limit_mb=$new_val"
+        log "Setting vm.pagecache_limit_mb=$PAGECACHE_LIMIT_MB"
+        sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT_MB"
+        if [ -z "$PAGECACHE_LIMIT_IGNORE_DIRTY" ]; then
+                log "ATTENTION: PAGECACHE_LIMIT_IGNORE_DIRTY not set in sysconfig file."
+                log "Setting system default '0'"
+                PAGECACHE_LIMIT_IGNORE_DIRTY="0"
+        fi
         # Set ignore_dirty
         save_value vm.pagecache_limit_ignore_dirty $(sysctl -n vm.pagecache_limit_ignore_dirty)
         log "Setting vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
@@ -192,45 +200,13 @@ tune_page_cache_limit_netweaver() {
         log "Disabling page cache limit"
         sysctl -w "vm.pagecache_limit_mb=0"
     fi
-    log "--- Finished application of page cache limit using Netweaver's recommendation"
-}
-
-# tune_page_cache_limit_hana optimises page cache limit according to HANA's recommendation in "1557506 - Linux paging improvements".
-tune_page_cache_limit_hana() {
-    log "--- Going to tune page cache limit using HANA's recommendation"
-    declare ENABLE_PAGECACHE_LIMIT="no"
-    declare OVERRIDE_PAGECACHE_LIMIT_MB="0"
-    declare PAGECACHE_LIMIT_IGNORE_DIRTY="0"
-    # The configuration file should overwrite the three parameters above
-    source /etc/sysconfig/sapnote-1557506
-    # Calculate new limit value
-    declare new_val
-    if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
-        declare -r MEMSIZE=$(math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024")
-		# Set pagecache limit = 2% of system memory
-        new_val=$(math "$MEMSIZE*1024*2/100")
-        # If override is present, use the override value.
-        [ "$OVERRIDE_PAGECACHE_LIMIT_MB" ] && new_val="$OVERRIDE_PAGECACHE_LIMIT_MB"
-        save_value vm.pagecache_limit_mb $(sysctl -n vm.pagecache_limit_mb)
-        log "Setting vm.pagecache_limit_mb=$new_val"
-        sysctl -w "vm.pagecache_limit_mb=$new_val"
-        # Set ignore_dirty
-        save_value vm.pagecache_limit_ignore_dirty $(sysctl -n vm.pagecache_limit_ignore_dirty)
-        log "Setting vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
-        sysctl -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
-    else
-        # Disable pagecache limit by setting it to 0
-        save_value vm.pagecache_limit_mb $(sysctl -n vm.pagecache_limit_mb)
-        log "Disabling page cache limit"
-        sysctl -w "vm.pagecache_limit_mb=0"
-    fi
-    log "--- Finished application of page cache limit using HANA's recommendation"
+    log "--- Finished application of page cache limit"
 }
 
 # revert_page_cache_limit reverts page cache limit parameter value tuned by either Netweaver or HANA recommendation.
 revert_page_cache_limit() {
     log "--- Going to revert page cache limit"
-    # Restore pagecahce settings
+    # Restore pagecache settings
     PAGECACHE_LIMIT=$(restore_value vm.pagecache_limit_mb)
     [ "$PAGECACHE_LIMIT" ] && log "Restoring vm.pagecache_limit_mb=$PAGECACHE_LIMIT" && sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT"
     PAGECACHE_LIMIT_IGNORE_DIRTY=$(restore_value vm.pagecache_limit_ignore_dirty)
@@ -252,22 +228,6 @@ tune_uuidd_socket() {
 revert_uuidd_socket() {
     UUIDD=$(restore_value uuidd)
     [ "$UUIDD" ] && log "Revert uuidd.socket to disabled state" && systemctl disable uuidd.socket && systemctl stop uuidd.socket
-}
-
-# tune_shmmni_hana calculates and applies an optimised value for kernel.shmmni parameter.
-tune_shmmni_hana() {
-    log "--- Going to tune kernel.shmmni using HANA's recommendation"
-    declare -r MEMSIZE=$(math "$(grep MemTotal /proc/meminfo | awk '{print $2}')/1024/1024")
-    declare SHMMNI_NEW
-    if [ $(math_test "$MEMSIZE < 64") ]; then
-        declare SHMMNI_NEW=4096
-    elif [ $(math_test "$MEMSIZE < 256") ]; then
-        declare SHMMNI_NEW=65536
-    else
-        declare SHMMNI_NEW=524288
-    fi
-    save_value kernel.shmmni $(sysctl -n kernel.shmmni)
-    increase_sysctl kernel.shmmni "$SHMMNI_NEW"
 }
 
 # revert_shmmni reverts kernel.shmmni value to previous state.

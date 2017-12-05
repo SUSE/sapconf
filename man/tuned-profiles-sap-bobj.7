@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2016 SUSE LINUX GmbH, Nuernberg, Germany.
+.\" * Copyright (c) 2016, 2017 SUSE LINUX GmbH, Nuernberg, Germany.
 .\" * Authors: Angela Briel <abriel@suse.com>
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH TUNED_PROFILES_SAP_BOBJ "7" "26 Apr 2017" "Adaptive system tuning daemon" "tuned"
+.TH TUNED_PROFILES_SAP_BOBJ "7" "December 2017" "Adaptive system tuning daemon" "tuned"
 .SH NAME
 tuned\-profiles\-sap\-bobj - Tuning profile for SAP Business OBJects (BOBJ).
 
@@ -23,15 +23,17 @@ The tuning profile automatically optimises kernel parameters and system configur
 
 The following parameters are calculated and tuned, according to various SAP notes and best practices:
 .IP \[bu]
-Semaphores: kernel.semmsl, semmns, semopm, and semmni
+Semaphores: kernel.sem
 .IP \[bu]
-Shared memory segments: kernel.shmmax, shmall
+Shared memory segments: kernel.shmmax, kernel.shmall
 .IP \[bu]
 Size of tmpfs
 .IP \[bu]
+Maximum number of memory mapping regions: vm.max_map_count
+.IP \[bu]
 Maximum number of open file descriptors in /etc/security/limits.conf
 .IP \[bu]
-Maximum number of memory mapping regions: vm.max_map_count
+Set the maximum number of OS tasks each user may run concurrently (UserTasksMax)
 .IP \[bu]
 Pagecache limit: vm.pagecache_limit_mb, pagecache_limit_ignore_dirty
 .IP \[bu]
@@ -51,12 +53,12 @@ tuned-adm profile sap-bobj
 .PP
 \fI/etc/sysconfig/sapconf\fR
 .RS 4
-Define the lower value-boundary of optimised parameters during tuning calculation.
+Define the behaviour and overrides for the common settings from 1275776 and tuning pagecache limit.
 .RE
 .PP
-\fI/etc/sysconfig/sapnote\-1557506\fR
+\fI/usr/lib/tuned/sap-bobj/tuned.conf\fR
 .RS 4
-Define the behaviour and overrides for tuning pagecache limit.
+the sap-bobj profile special configuration file.
 .RE
 
 .SH "SEE ALSO"

@@ -1,78 +1,99 @@
 ## Path:	Productivity/Other
-## Description: Limits for system tuning profile "sap-netweaver".
+## Description: Limits for system tuning profiles of sapconf
 ## ServiceRestart: tuned
+##
+## This file is sourced in the common (lib/common.sh) and profile special
+## scripts (sap-hana/script.sh, sap-netweaver/script.sh) of the tuned
+## integration of sapconf.
 
-## Type:	integer
-## Default:	8388608
-#
 # The lower tuning limit of the size of tmpfs mounted on /dev/shm in KiloBytes.
 # It should not be smaller than 8388608 (8GB).
 #
+# The size of tmpfs mounted on /dev/shm is calculated as maximum of
+# current size, (RAM + SWAP) * 0.75, TMPFS_SIZE_MIN
+#
+# SAP Note 941735
+#
 TMPFS_SIZE_MIN=8388608
 
-## Type:	integer
-## Default:	5242880
+# Size of the requested tmpfs in percent of the virtual memory.
+# Depending on the size of TMPFS_SIZE_MIN, the size of the
+# virtual memory (physical+swap), and the current size the
+# maximum value is choosen
+# Set to 75
 #
-# The lower tuning limit of the maximum total number of shared memory pages.
+# SAP Note 941735
+#
+VSZ_TMPFS_PERCENT=75
+
+# kernel.shmall
+# The default tuning limit of the maximum total number of shared memory pages.
 # This number should not be less than 20 GB divided by the size in
 # bytes of one page. To determine the current page size run the
 # command "getconf PAGESIZE".
-# 
-SHMALL_MIN=5242880
-
-## Type:	integer
-## Default:	21474836480
 #
+# calculated by
+# (total (system+swap) memory size in KB * 1024 / pagesize)
+#
+# kernel.shmall is set to the maximum of the calculated value, SHMALL_MIN value
+# from this file and the actual system setting
+#
+# SAP Note 941735, HANA Administration Guide
+# 
+SHMALL_MIN=1152921504606846720
+
+# kernel.shmmax
 # The lower tuning limit of the maximum amount of a single shared memory
 # segment in Bytes.
 # This number should not be less than 20 GB (SAP Note 941735).
 #
-SHMMAX_MIN=21474836480
-
-## Type:	integer
-## Default:	1250
+# calculated by (total (system+swap) memory size in KB * 1024)
 #
+# kernel.shmmax is set to the maximum of the calculated value, SHMMAX_MIN value
+# from this file and the actual system setting
+#
+# SHMMAX_MIN set to ULONG_MAX (18446744073709551615)
+#
+# SAP Note 941735, HANA Administration Guide
+#
+SHMMAX_MIN=18446744073709551615
+
+# kernel.sem
+# The next 4 values define the Semaphore limits
+# kernel.sem = max(system, SEMMSL_MIN) max(system, SEMMNS_MIN) max(system, SEMOPM_MIN) max(system, SEMMNI_MIN)
+#
+# SAP Note 1275776
+#
+
 # The lower tuning limit of the maximum number of semaphores per semaphore set.
+# Set to 32000
 #
-SEMMSL_MIN=1250
+SEMMSL_MIN=32000
 
-## Type:	integer
-## Default:	256000
-#
 # The lower tuning limit of the maximum total number of semaphores.
+# Set to 1024000000
 #
-SEMMNS_MIN=256000
+SEMMNS_MIN=1024000000
 
-## Type:	integer
-## Default:	100
-#
 # The lower tuning limit of the maximum number of semaphore operations that
 # can be performed per "semop" system call.
+# Set to 500
 #
-SEMOPM_MIN=100
+SEMOPM_MIN=500
 
-## Type:	integer
-## Default:	8192
-#
 # The lower tuning limit of maxium total number of semaphore sets.
+# Set to 32000
 #
-SEMMNI_MIN=8192
+SEMMNI_MIN=32000
 
-## Type:	integer(50:90)
-## Default:	75
-#
-# Size of the requested tmpfs in percent of the virtual memory.
-# Depending on the size of TMPFS_SIZE_MIN, the size of the
-# virtual memory (physical+swap), and the current size the
-# maximum value is choosen (SAP Note 941735).
-#
-VSZ_TMPFS_PERCENT=75
-
+# /etc/security/limits.conf
 ## Type:        regexp(^@(sapsys|sdba|dba)[[:space:]]+(-|hard|soft)[[:space:]]+(nofile)[[:space:]]+[[:digit:]]+)
-## Default:     ""
 #
 # Maximum number of open files for SAP application groups sapsys, sdba, and dba.
 # Consult with manual page limits.conf(5) for the correct syntax.
+# Set to 65536
+#
+# SAP Note 1771258
 #
 LIMIT_1="@sapsys soft nofile 65536"
 LIMIT_2="@sapsys hard nofile 65536"
@@ -80,3 +101,309 @@ LIMIT_3="@sdba soft nofile 65536"
 LIMIT_4="@sdba hard nofile 65536"
 LIMIT_5="@dba soft nofile 65536"
 LIMIT_6="@dba hard nofile 65536"
+
+# /etc/systemd/logind.conf.d/sap.conf UserTasksMax setting
+# This file configures a parameter of the systemd login manager
+# It sets the maximum number of OS tasks each user may run concurrently
+# The behaviour of the systemd login manager was changed starting SLES12SP2
+# to prevent fork bomb attacks.
+# No need to set in SLES12SP1.
+#
+# Note: A reboot is needed after the first setup or after setting a new value
+# to get the change take effect.
+# Or restart systemd-logind daemon by
+# systemctl restart systemd-logind.service
+# Be warned that this will terminate all login sessions that might still be open
+# A message will indicate if a reboot/restart is necessary.
+# Look at the log file /var/log/sapconf.log to know for sure.
+#
+# There is no rollback during revert (change of tuned profile or stop of tuned.)
+# Set to 'infinity'
+#
+# SAP Note 2205917, 1984787
+USERTASKSMAX=infinity
+
+# vm.max_map_count
+# The value is the maximum number of memory map areas a process may have.
+# Memory map areas are used as a side-effect of calling malloc, directly by
+# mmap and mprotect, and also when loading shared libraries.
+#
+# vm.max_map_count is set to the maximum of MAX_MAP_COUNT_DEF value from
+# this file and the actual system setting
+#
+# vm.max_map_count should be set to MAX_INT (2147483647)
+#
+# SAP Note 1275776, 900929, HANA Administration Guide
+#
+MAX_MAP_COUNT_DEF=2147483647
+
+# kernel.shmmni
+# The value is the maximum number of shared memory identifies available in the
+# system.
+#
+# kernel.shmmni is set to the maximum of SHMMNI_DEF value from this file and
+# the actual system setting
+#
+# kernel.shmmni  should be set to 32768 (see bsc#874778)
+#
+# SAP Note 2534844, bsc#874778, HANA Administration Guide
+#
+SHMMNI_DEF=32768
+
+# vm.dirty_bytes (indirect vm.dirty_ratio)
+# Contains the amount of dirty memory at which a process generating disk writes
+# will itself start writeback.
+# Note: dirty_bytes is the counterpart of dirty_ratio. Only one of them may be
+# specified at a time. When one sysctl is written it is immediately taken into
+# account to evaluate the dirty memory limits and the other appears as 0 when
+# read.
+# Note: when changing the tuned profile or switching off tuned, both values
+# will be set back to their previous settings.
+# Note: the minimum value allowed for dirty_bytes is two pages (in bytes); any
+# value lower than this limit will be ignored and the old configuration will be
+# retained.
+#
+# vm.dirty_bytes is set to the maximum of DIRTY_BYTES_DEF value from this file
+# and the actual system setting
+#
+# vm.dirty_bytes  should be set to 629145600 (see TID_7010287)
+#
+# TID_7010287
+#
+DIRTY_BYTES_DEF=629145600
+
+# vm.dirty_background_bytes (indirect vm.dirty_background_ratio)
+# Contains the amount of dirty memory at which the background kernel
+# flusher threads will start writeback.
+# Note: dirty_background_bytes is the counterpart of dirty_background_ratio.
+# Only one of them may be specified at a time. When one sysctl is written it is
+# immediately taken into account to evaluate the dirty memory limits and the
+# other appears as 0 when read.
+# Note: when changing the tuned profile or switching off tuned, both values
+# will be set back to their previous settings.
+#
+# vm.dirty_background_bytes is set to the maximum of DIRTY_BG_BYTES_DEF value
+# from this file and the actual system setting
+#
+# vm.dirty_background_bytes  should be set to 314572800 (see TID_7010287)
+#
+# TID_7010287
+#
+DIRTY_BG_BYTES_DEF=314572800
+
+# net.ipv4.tcp_slow_start_after_idle
+# If enabled (=1), provide RFC 2861 behavior and time out the congestion
+# window after an idle period. An idle period is defined as the current
+# RTO (retransmission timeout). If disabled (=0), the congestion window will
+# not be timed out after an idle period.
+#
+# This value is important for large ScaleOut HANA clusters and HANA2 in general.
+# So disable TCP slow start on idle connections
+# set net.ipv4.tcp_slow_start_after_idle=0
+# SAP Note
+#
+TCP_SLOW_START=0
+
+# /sys/kernel/mm/ksm/run
+# Kernel Samepage Merging (KSM). KSM allows for an application to register with
+# the kernel so as to have its memory pages merged with other processes that
+# also register to have their pages merged. For KVM the KSM mechanism allows
+# for guest virtual machines to share pages with each other. In todays
+# environment where many of the guest operating systems like XEN, KVM are
+# similar and are running on same host machine, this can result in significant
+# memory savings. Default value is 0.
+#
+# ksm set to 0
+#
+# SAP Note 2205917
+#
+KSM=0
+
+# /proc/sys/kernel/numa_balancing
+# Enables/disables automatic page fault based NUMA memory balancing.
+# Memory is moved automatically to nodes that access it often.
+# Enables/disables automatic NUMA memory balancing. On NUMA machines, there
+# is a performance penalty if remote memory is accessed by a CPU. When this
+# feature is enabled the kernel samples what task thread is accessing memory
+# by periodically unmapping pages and later trapping a page fault. At the
+# time of the page fault, it is determined if the data being accessed should
+# be migrated to a local memory node.
+# The unmapping of pages and trapping faults incur additional overhead that
+# ideally is offset by improved memory locality but there is no universal
+# guarantee. If the target workload is already bound to NUMA nodes then this
+# feature should be disabled. Otherwise, if the system overhead from the
+# feature is too high then the rate the kernel samples for NUMA hinting
+# faults may be controlled by the numa_balancing_scan_period_min_ms,
+# numa_balancing_scan_delay_ms, numa_balancing_scan_period_max_ms,
+# numa_balancing_scan_size_mb, and numa_balancing_settle_count sysctls.
+#
+# Turn off autoNUMA balancing
+# 0 to disable, 1 to enable
+# numa_balancing set to 0
+#
+# SAP Note 2205917
+#
+NUMA_BALANCING=0
+
+# /sys/kernel/mm/transparent_hugepage/enabled
+# Intel x86_64 only, not on Power ppc64 (SAP note 2055470)
+#
+# 'never' to disable, 'always' to enable
+# Disable transparent hugepages
+# set to 'never'
+#
+# SAP Note 2131662, 2205917, 2031375
+#
+THP=never
+
+## Path:           SAP/Note/1557506 - Linux paging improvements
+## Description:    Tune page cache limit to prevent eviction of SAP applications
+##                 memory into swap
+## ServiceRestart: tuned
+
+# Consider to enable pagecache limit feature if your SAP workloads cause
+# frequent and excessive swapping activities.
+# It is recommended to leave pagecache limit disabled if the system has
+# low or no swap space.
+# Default is 'no'
+#
+# SAP Note 1557506
+#
+ENABLE_PAGECACHE_LIMIT="no"
+
+# vm.pagecache_limit_mb
+# When pagecache limit feature is enabled, the limit value has to set manually
+# by setting this parameter to the desired limit value.
+#
+# SAP Note 1557506
+#
+# Please uncomment the following line and set your preferred value
+#PAGECACHE_LIMIT_MB=""
+
+# vm.pagecache_limit_ignore_dirty
+# Whether or not to ignore dirty memory when enforcing the pagecache limit.
+# If set to 0, dirty memory will be freed (written onto disk) when enforcing
+# the pagecache limit.
+# If set to 1 (default), dirty memory will not be freed when enforcing the
+# pagecache limit.
+# If set to 2 - a middle ground, some dirty memory will be freed when enforcing
+# the limit.
+#
+# SAP Note 1557506
+#
+# Please uncomment the following line and set your preferred value
+#PAGECACHE_LIMIT_IGNORE_DIRTY=""
+
+
+###############################################################################
+###############################################################################
+###############################################################################
+# The following lines are only for documentation purpose
+# for more information see 'man sapconf'
+#
+# Values set in the configuration file /usr/lib/tuned/<profile>/tuned.conf
+# where <profile> may be sap-hana or sap-netweaver
+# The values are set during start, stop or profile change of tuned.
+#
+
+# [cpu] energy_perf_bias setting
+# performance related setting in tuned.conf
+#
+# Energy Performance Bias EPB (applies to Intel-based systems only)
+# energy_perf_bias: performance - 0, normal - 6, powersave - 15
+#
+# Value is commented out by default
+#
+# SAP Note 2205917
+#
+#energy_perf_bias = performance
+
+# [cpu] governor setting
+# performance related setting in tuned.conf
+#
+# CPU Frequency/Voltage scaling (applies to Intel-based systems only)
+# The clock frequency and voltage of modern CPUs can scale, in order to save
+# energy when there’s less work to be done. However HANA as a high-performance
+# database benefits from high CPU frequencies.
+# governor: performance - 0, normal - 6, powersave - 15
+#
+# Value is commented out by default
+#
+# SAP Note 2205917
+#
+#governor = performance
+
+# [cpu] /dev/cpu_dma_frequency setting
+# performance related setting in tuned.conf
+#
+# force latency (applies to Intel-based systems only)
+#
+# The [cpu] section in tuned.conf dynamically changes the PM QoS CPU DMA latency
+# according to the CPU load. If the CPU load is lower than the value specified
+# by the load_threshold parameter, the latency is set to the value specified by
+# the latency_high parameter, otherwise it is set to value specified by
+# latency_low.
+# To switch off these dynamically changes the latency can be forced to a
+# specific value. This can be accomplished by setting the force_latency
+# parameter to the required latency value.
+# Such a 'static' setting may make the OS more predictable
+#
+# Value is set to 70
+#
+# SAP Note 2205917
+#
+#force_latency = 70
+
+# [cpu] Intel P-State driver setting
+# performance related setting in tuned.conf
+#
+# min_perf_pct (applies to Intel-based systems only and
+#               only if Intel-P-State-Driver is used)
+# The P-State driver provides its own sysfs files to control the P-State
+# selection. These files have been added to /sys/devices/system/cpu/intel_pstate
+# Any changes made to these files are applicable to all CPUs
+#
+# min_perf_pct: Limits the minimum P-State that will be requested by the driver.
+# It states it as a percentage of the max (non-turbo) performance level.
+#
+# Value is commented out by default
+#
+# SAP Note
+#
+#min_perf_pct = 100
+
+# [disk] I/O scheduler
+#
+# The default I/O scheduler for SLES is CFQ. It offers satisfactory performance
+# for wide range of I/O task, however choosing an alternative scheduler may
+# potentially yield better latency characteristics and throughput.
+# "noop" is an alternative scheduler, in comparison to CFQ it may offer more
+# consistent performance, lower computation overhead, and potentially higher
+# throughput.
+#
+# For most SAP environments (RAID, storage arrays, virtualizaton) 'noop' is the
+# better choice.
+# Value is set to 'noop'
+#
+# When set, all block devices on the system will be switched to the chosen
+# scheduler.
+#
+# SAP Note
+#
+#elevator = noop
+
+#
+#
+# Requirements and settings during sapconf package installation:
+#
+# sysstat - see SAP Note 1310037
+# package requirement, service is enabled and started during post installation
+# script
+#
+# uuidd - see SAP Note 1984787
+# package requirement, service is enabled and started during post installation
+# script
+#
+# sapinit-systemd-compat - see SAP Note 1984787
+# package requirement, only needed for SLES12GA and SLES12SP1
+#

@@ -35,7 +35,11 @@ increase_sysctl() {
         sysctl -w "$param=$new_val"
         echo -n "$new_val"
     else
-        log "Leaving $param unchanged at $current_val instead of calculated $new_val"
+        if [ $(math_test "$current_val > $new_val") ]; then
+            log "Leaving $param unchanged at $current_val instead of calculated $new_val"
+        else
+            log "Leaving $param unchanged at $current_val"
+        fi
         echo -n "$current_val"
     fi
 }
@@ -50,7 +54,26 @@ increase_val() {
         log "Increasing $remark from $current_val to $new_val"
         echo -n "$new_val"
     else
-        log "Leaving $remark unchanged at $current_val instead of $new_val"
+        if [ $(math_test "$current_val > $new_val") ]; then
+            log "Leaving $remark unchanged at $current_val instead of $new_val"
+        else
+            log "Leaving $remark unchanged at $current_val"
+        fi
         echo -n "$current_val"
+    fi
+}
+
+# check, if a value is defined in the (sourced) sysconfig file
+# if not, log a warning and use a pre-defined default value
+chk_conf_val() {
+    declare -r val2chk=$1
+    declare -r def_val=$2
+    eval val2set=\$$val2chk
+    if [ -z "$val2set" ]; then
+        log "ATTENTION: $val2chk not set in sysconfig file."
+        log "Setting default value '$def_val' instead"
+	echo -n "$def_val"
+    else
+	echo -n "$val2set"
     fi
 }

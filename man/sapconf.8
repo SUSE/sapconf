@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2015 SUSE LINUX GmbH, Nuernberg, Germany.
+.\" * Copyright (c) 2015-2017 SUSE LINUX GmbH, Nuernberg, Germany.
 .\" * Authors: Howard Guo
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "February 2014" "util-linux" "System Administration"
+.TH sapconf 8 "December 2017" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -27,7 +27,10 @@ sapconf activates SAP Netweaver, SAP ASE/Sybase, SAP Business OBJects (BOBJ) or 
 .SH ACTIONS
 
 .IP \[bu]
-start,restart,try-restart,reload - If the tune daemon does not have an SAP HANA or Netweaver profile active, activiate SAP Netweaver tuning profile. Otherwise leave the profile choice alone and activate tune daemon.
+start,restart,try-restart,reload - If the tune daemon does not have any profile active, activiate SAP Netweaver tuning profile. Otherwise leave the profile choice alone and activate tune daemon.
+
+.IP \[bu]
+netweaver - Activate SAP Netweaver tuning profile. Exit 1 on failure.
 
 .IP \[bu]
 hana,b1 - Activate SAP HANA or BusinessOne tuning profile. Exit 1 on failure.

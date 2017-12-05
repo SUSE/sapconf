@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2016 SUSE LINUX GmbH, Nuernberg, Germany.
+.\" * Copyright (c) 2016, 2017 SUSE LINUX GmbH, Nuernberg, Germany.
 .\" * Authors: Howard Guo <hguo@suse.com>
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH TUNED_PROFILES_SAP_NETWEAVER "7" "23 Feb 2016" "Adaptive system tuning daemon" "tuned"
+.TH TUNED_PROFILES_SAP_NETWEAVER "7" "December 2017" "Adaptive system tuning daemon" "tuned"
 .SH NAME
 tuned\-profiles\-sap\-netweaver - Tuning profile for SAP Netweaver.
 
@@ -23,24 +23,43 @@ The tuning profile automatically optimises kernel parameters and system configur
 
 The following parameters are calculated and tuned, according to various SAP notes and best practices:
 .IP \[bu]
-Semaphores: kernel.semmsl, semmns, semopm, and semmni
+Semaphores: kernel.sem
 .IP \[bu]
-Shared memory segments: kernel.shmmax, shmall
+Shared memory: kernel.shmall, kernel.shmmax, kernel.shmmni
 .IP \[bu]
 Size of tmpfs
 .IP \[bu]
-Maximum number of open file descriptors in /etc/security/limits.conf
-.IP \[bu]
 Maximum number of memory mapping regions: vm.max_map_count
 .IP \[bu]
+Maximum number of open file descriptors in /etc/security/limits.conf
+.IP \[bu]
+Set the maximum number of OS tasks each user may run concurrently (UserTasksMax)
+.IP \[bu]
 Pagecache limit: vm.pagecache_limit_mb, pagecache_limit_ignore_dirty
+.IP \[bu]
+Dirty memory: Set vm.dirty_bytes and vm.dirty_background_bytes
+.IP \[bu]
+Disable TCP slow start on idle connections: net.ipv4.tcp_slow_start_after_idle
+.IP \[bu]
+Turn off KSM: /sys/kernel/mm/ksm
+.IP \[bu]
+Turn off NUMA-balancing: kernel.numa_balancing
+.IP \[bu]
+Disable transparent_hugepage
 .IP \[bu]
 CPU power management, disk cache, kernel scheduling and VM tweaks (inherited from throughput-performance profile).
 .IP \[bu]
 Enable uuidd.socket.
 
+Note that
+.BR tuned-profiles-sap-hana (7) and 
+.BR tuned-profiles-sap-netweaver (7)
+use the same tuning values for HANA and Netweaver workloads to get a better base in the future for mixed HANA and ABAB workloads on one system. That means the use of the same tuned.conf and script.sh file for both profiles. 
+
 .SH "SAP NOTES"
-The tuned parameters are calculated according to SAP note number 1557506, 941735.
+The tuned parameters are calculated according to SAP note number 900929, 941735, 1275776, 1310037, 1557506, 1771258, 1984787, 2031375, 2055470, 2131662, 2205917, 2534844 and TID_7010287
+.br See the comments in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR for details.
+
 
 .SH ACTIVATION
 To activate the SAP Netweaver tuning profile, run as root:
@@ -51,17 +70,20 @@ tuned-adm profile sap-netweaver
 .PP
 \fI/etc/sysconfig/sapconf\fR
 .RS 4
-Define the lower value-boundary of optimised parameters during tuning calculation.
+the central configuration file
 .RE
 .PP
-\fI/etc/sysconfig/sapnote\-1557506\fR
+\fI/usr/lib/tuned/sap-hana/tuned.conf\fR
 .RS 4
-Define the behaviour and overrides for tuning pagecache limit.
+the sap-hana profile special configuration file. The same file is used for the sap-netweaver profile.
 .RE
 
 .SH "SEE ALSO"
+.BR sapconf (5)
+.BR sapconf (7)
+.BR tuned-profiles-sap-hana(7)
 .BR tuned (8)
 .BR tuned\-adm (8)
 .SH AUTHOR
 .NF
-Howard Guo <hguo@suse.com>
+Howard Guo <hguo@suse.com>, Angela Briel <abriel@suse.com>
