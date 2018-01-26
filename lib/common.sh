@@ -171,6 +171,10 @@ revert_preparation() {
 # tune_page_cache_limit optimises page cache limit according to recommendation in "1557506 - Linux paging improvements".
 tune_page_cache_limit() {
     log "--- Going to tune page cache limit using the recommendations defined in /etc/sysconfig/sapconf"
+    if [ ! -f /proc/sys/vm/pagecache_limit_mb ]; then
+        log "pagecache limit is not supported by os, skipping."
+        return
+    fi
     declare ENABLE_PAGECACHE_LIMIT="no"
     # The configuration file should overwrite the three parameters above
     if [ -r /etc/sysconfig/sapconf ]; then

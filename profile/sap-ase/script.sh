@@ -54,10 +54,22 @@ start() {
 
 
     # 1410736
-    save_value net.ipv4.tcp_keepalive_time $(sysctl -n net.ipv4.tcp_keepalive_time)
-    increase_sysctl net.ipv4.tcp_keepalive_time 300
-    save_value net.ipv4.tcp_keepalive_intvl $(sysctl -n net.ipv4.tcp_keepalive_intvl)
-    increase_sysctl net.ipv4.tcp_keepalive_intvl 300
+    cur_val=$(sysctl -n net.ipv4.tcp_keepalive_time)
+    if [ "$cur_val" != "300" ]; then
+        save_value net.ipv4.tcp_keepalive_time $(sysctl -n net.ipv4.tcp_keepalive_time)
+        log "Change net.ipv4.tcp_keepalive_time from $cur_val to 300"
+        sysctl -w net.ipv4.tcp_keepalive_time=300
+    else
+        log "net.ipv4.tcp_keepalive_time unchanged at $cur_val"
+    fi
+    cur_val=$(sysctl -n net.ipv4.tcp_keepalive_intvl)
+    if [ "$cur_val" != "300" ]; then
+        save_value net.ipv4.tcp_keepalive_intvl $(sysctl -n net.ipv4.tcp_keepalive_intvl)
+        log "Change net.ipv4.tcp_keepalive_intvl from $cur_val to 300"
+        sysctl -w net.ipv4.tcp_keepalive_intvl=300
+    else
+        log "net.ipv4.tcp_keepalive_intvl unchanged at $cur_val"
+    fi
 
     # 1680803
     save_value fs.aio-max-nr $(sysctl -n fs.aio-max-nr)
