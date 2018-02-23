@@ -407,3 +407,4 @@ ENABLE_PAGECACHE_LIMIT="no"
 # sapinit-systemd-compat - see SAP Note 1984787
 # package requirement, only needed for SLES12GA and SLES12SP1
 #
+#SAPCONF_END=""

@@ -19,7 +19,7 @@
 sapconf \- Kernel and system configuration for SAP products
 
 .SH DESCRIPTION
-For compatibility reasons the command sapconf(8) exists. But sapconf(8) is deprecated in favour of tune daemon (tuned) and its profiles "sap-netweaver", "sap-hana", "sap-ase", "sap-bobj".
+sapconf and its profiles "sap-netweaver", "sap-hana", "sap-ase", "sap-bobj" work on top of the tune daemon (\fBtuned(8)\fP).
 .PP
 The profiles are stored in subdirectories below \fI/usr/lib/tuned\fP. If you need to customize the profiles, you can copy them to \fI/etc/tuned\fP and modify them as you need. If only copying the \fItuned.conf\fP file, please do not forget to adjust the script path in the \fB[script]\fP section to \fI/usr/lib/tuned/<profile>/script.sh\fP. Or copy the script.sh as well.
 .PP
@@ -41,6 +41,20 @@ Every tuning action is logged to \fI/var/log/sapconf.log\fP
 To activate a sapconf tuning profile, run as root:
 .PP
 tuned-adm profile <profile>
+.PP
+Make sure that the tune daemon (tuned) is enabled and running.
+.PP
+Check
+.br
+systemctl status tuned
+.PP
+Enable
+.br
+systemctl enabled tuned
+.PP
+Start
+.br
+systemctl start tuned
 
 .SH PROFILES
 At the moment we're providing the following pre\-defined profiles:
@@ -156,7 +170,6 @@ log file of sapconf
 
 .SH SEE\ ALSO
 .BR sapconf (5)
-.BR sapconf (8)
 .BR tuned (8)
 .BR tuned\-adm (8)
 .BR tuned\-profiles\-sap\-hana(7)
