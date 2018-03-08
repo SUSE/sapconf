@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2015-2017 SUSE LINUX GmbH, Nuernberg, Germany.
+.\" * Copyright (c) 2015-2018 SUSE LINUX GmbH, Nuernberg, Germany.
 .\" * Authors: Howard Guo
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "December 2017" "util-linux" "System Administration"
+.TH sapconf 8 "March 2018" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -94,12 +94,6 @@ Note: If the package sapconf is removed from the system, the following settings 
 Please remove the file manually, if it is not needed any longer.
 .br
 Note: A reboot is needed after the removal of the file to get the change take effect.
-.br
-Or restart systemd-logind daemon by
-.br
-# systemctl restart systemd-logind.service
-.br
-Be warned that this will terminate all login sessions that might still be open
 .PP
 .TP 4
 .BI "Maximum number of open file descriptors in /etc/security/limits.conf"
@@ -107,7 +101,7 @@ Please remove the entries manually, if they are not needed any longer.
 .PP
 .TP 4
 .BI "A running sysstat service."
-Please stop and disable the systat service manually, if it is not needed any longer. 
+Please stop and disable the sysstat service manually, if it is not needed any longer.
 .PP
 .TP 4
 .BI /etc/sysconfig/sapconf
