@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2017 SUSE LINUX GmbH, Nuernberg, Germany.
+.\" * Copyright (c) 2017-2018 SUSE LINUX GmbH, Nuernberg, Germany.
 .\" * Authors: Angela Briel
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 5 "December 2017" "sapconf configuration file"
+.TH sapconf 5 "March 2018" "sapconf configuration file"
 .SH NAME
 sapconf \- central configuration file of sapconf
 
@@ -130,28 +130,6 @@ Limit settings in \fB/etc/security/limits.conf\fP during the common part (tune_p
 .br
 SAP Note 1771258
 .RE
-.RE
-.PP
-.TP 4
-.BI USERTASKSMAX=infinity
-The file \fB/etc/systemd/logind.conf.d/sap.conf\fP configures a parameter of the systemd login manager. It sets the maximum number of OS tasks each user may run concurrently. The behaviour of the systemd login manager was changed starting SLES12SP2 to prevent fork bomb attacks. So no need to set in SLES12SP1.
-.br
-Note: A reboot is needed after the first setup or after setting a new value to get the change take effect.
-.br
-Or restart systemd-logind daemon by
-.br
-# systemctl restart systemd-logind.service
-.br
-Be warned that this will terminate all login sessions that might still be open.
-.br
-A message will indicate if a reboot/restart is necessary. Look at the log file /var/log/sapconf.log to know for sure.
-.br
-There is no rollback during revert (change of tuned profile or stop of tuned.)
-.PP
-.RS 4
-Limit setting \fBUserTasksMax\fP in \fB/etc/systemd/logind.conf.d/sap.conf\fP during the common part (tune_preparation) of the scripting
-.br
-SAP Note 2205917, 1984787
 .RE
 .PP
 .TP 4
@@ -411,6 +389,19 @@ SAP Note 1984787
 Package requirementm, only needed for SLES12GA and SLES12SP1. This package adds the needed drop-in file to the systemd configuration and told the daemon to re-read its configuration.
 .br
 SAP Note 1984787
+.PP
+.TP 4
+.BI USERTASKSMAX=infinity
+The file \fB/etc/systemd/logind.conf.d/sap.conf\fP configures a parameter of the systemd login manager. It sets the maximum number of OS tasks each user may run concurrently. The behaviour of the systemd login manager was changed starting SLES12SP2 to prevent fork bomb attacks. So no need to set in SLES12SP1.
+.br
+The file will be created during package installation, if it does not already exists.
+.br
+Note: A reboot is needed after the first setup to get the change take effect.
+A message will indicate if a reboot is necessary.
+.br
+There is no rollback.
+.br
+SAP Note 2205917, 1984787
 .PP
 .SH "FILES"
 .PP
