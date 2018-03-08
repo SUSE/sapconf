@@ -121,27 +121,7 @@ tune_preparation() {
         done
     done
 
-   if [ "$(grep ^VERSION_ID= /etc/os-release | awk -F \" '{print $2}')" != "12.1" -a -n "$USERTASKSMAX" ]; then
-        # Amend logind's behaviour (bsc#1031355, bsc#1039309, bsc#1043844), there is no rollback in revert function.
-        log "Set the maximum number of OS tasks each user may run concurrently (UserTasksMax) to '$USERTASKSMAX'"
-        change_sap_conf=true
-        SAP_LOGIN_FILE=/etc/systemd/logind.conf.d/sap.conf
-        mkdir -p /etc/systemd/logind.conf.d
-        if [ -f $SAP_LOGIN_FILE ]; then
-            grep "^[[:blank:]]*UserTasksMax[[:blank:]]*=[[:blank:]]*$USERTASKSMAX" $SAP_LOGIN_FILE > /dev/null 2>&1
-            if [ "$?" -eq 0 ]; then
-                # everything ok, UserTasksMax already set to infinity
-                change_sap_conf=false
-                log "With this setting your system is vulnerable to fork bomb attacks."
-            fi
-        fi
-        if $change_sap_conf; then
-            echo "[Login]
-UserTasksMax=$USERTASKSMAX" > $SAP_LOGIN_FILE
-            log "Please reboot the system or restart systemd-logind daemon for the UserTasksMax change to become effective"
-        fi
-   fi
-   log "--- Finished application of universal tuning techniques"
+    log "--- Finished application of universal tuning techniques"
 }
 
 # revert_preparation reverts tuning operations conducted by "1275776 - Preparing SLES for SAP" and "1984787 - Installation notes".
