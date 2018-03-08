@@ -102,27 +102,6 @@ LIMIT_4="@sdba hard nofile 65536"
 LIMIT_5="@dba soft nofile 65536"
 LIMIT_6="@dba hard nofile 65536"
 
-# /etc/systemd/logind.conf.d/sap.conf UserTasksMax setting
-# This file configures a parameter of the systemd login manager
-# It sets the maximum number of OS tasks each user may run concurrently
-# The behaviour of the systemd login manager was changed starting SLES12SP2
-# to prevent fork bomb attacks.
-# No need to set in SLES12SP1.
-#
-# Note: A reboot is needed after the first setup or after setting a new value
-# to get the change take effect.
-# Or restart systemd-logind daemon by
-# systemctl restart systemd-logind.service
-# Be warned that this will terminate all login sessions that might still be open
-# A message will indicate if a reboot/restart is necessary.
-# Look at the log file /var/log/sapconf.log to know for sure.
-#
-# There is no rollback during revert (change of tuned profile or stop of tuned.)
-# Set to 'infinity'
-#
-# SAP Note 2205917, 1984787
-USERTASKSMAX=infinity
-
 # vm.max_map_count
 # The value is the maximum number of memory map areas a process may have.
 # Memory map areas are used as a side-effect of calling malloc, directly by
@@ -407,3 +386,18 @@ ENABLE_PAGECACHE_LIMIT="no"
 # sapinit-systemd-compat - see SAP Note 1984787
 # package requirement, only needed for SLES12GA and SLES12SP1
 #
+# /etc/systemd/logind.conf.d/sap.conf UserTasksMax setting
+# see SAP Note 2205917 and 1984787
+# This file configures a parameter of the systemd login manager
+# It sets the maximum number of OS tasks each user may run concurrently
+# The behaviour of the systemd login manager was changed starting SLES12SP2
+# to prevent fork bomb attacks.
+# No need to set in SLES12SP1.
+#
+# Note: A reboot is needed after the first setup or after setting a new value
+# to get the change take effect.
+# The file will be created during the package installation. The value for
+# UserTasksMax will be set to 'infinity'
+# A message will indicate if a reboot/restart is necessary.
+#
+#SAPCONF_END=""
