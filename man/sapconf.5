@@ -239,45 +239,7 @@ SAP Note 2131662, 2205917, 2031375
 .PP
 .TP 0
 .BI "Linux paging improvements"
-Tune page cache limit to prevent eviction of SAP applications memory into swap
-.RS 4
-.TP 3
-.BI ENABLE_PAGECACHE_LIMIT="no"
-Consider to enable pagecache limit feature if your SAP workloads cause frequent and excessive swapping activities. It is recommended to leave pagecache limit disabled if the system has low or no swap space.
-.PP
-.RS 3
-This parameter is used in the common part (tune_page_cache_limit) of the scripting to control the setting of \fBvm.pagecache_limit_mb\fP
-.br
-SAP Note 1557506
-.RE
-.TP 3
-.BI #PAGECACHE_LIMIT_MB=""
-When the pagecache limit feature (see value above) is \fBenabled\fP, the limit value has to set manually by setting this parameter to the desired limit value.
-.br
-This parameter is commented out by default, so please \fIuncomment\fP the line containing \fBPAGECACHE_LIMIT_MB=""\fP and set your preferred value. 
-.PP
-.RS 3
-This will set \fBvm.pagecache_limit_mb\fP during the common part (tune_page_cache_limit) of the scripting. If the parameter \fBPAGECACHE_LIMIT_MB=""\fP is still commented out or empty although ENABLE_PAGECACHE_LIMIT is set to "yes", the pagecache limit feature will be disabled by setting \fBvm.pagecache_limit_mb\fP to 0. A hint is logged to \fI/var/log/sapconf.log\fP
-.br
-SAP Note 1557506
-.RE
-.TP 3
-.BI #PAGECACHE_LIMIT_IGNORE_DIRTY=""
-Whether or not to ignore dirty memory when enforcing the pagecache limit.
-.br
-.RS 3
-If set to 0, dirty memory will be freed (written onto disk) when enforcing the pagecache limit.
-.br
-If set to 1 (default), dirty memory will not be freed when enforcing the pagecache limit.
-.br
-If set to 2 a middle ground, some dirty memory will be freed when enforcing the limit.
-.br
-This parameter is commented out by default, so please \fIuncomment\fP the line containing \fBPAGECACHE_LIMIT_IGNORE_DIRTY=""\fP and set your preferred value. 
-.PP
-This will set \fBvm.pagecache_limit_ignore_dirty\fP during the common part (tune_page_cache_limit) of the scripting.
-.br
-SAP Note 1557506
-.RE
+no longer supported since SLE15.
 .PP
 .SH DESCRIPTION OF PART 2
 The parameters of the second part of the configuration file are not changeable in /etc/sysconfig/sapconf. They are part of this file for documentation purpose only.
