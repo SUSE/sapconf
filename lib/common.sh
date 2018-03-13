@@ -148,56 +148,6 @@ revert_preparation() {
     log "--- Finished reverting universally tuned parameters"
 }
 
-# tune_page_cache_limit optimises page cache limit according to recommendation in "1557506 - Linux paging improvements".
-tune_page_cache_limit() {
-    log "--- Going to tune page cache limit using the recommendations defined in /etc/sysconfig/sapconf"
-    if [ ! -f /proc/sys/vm/pagecache_limit_mb ]; then
-        log "pagecache limit is not supported by os, skipping."
-        return
-    fi
-    declare ENABLE_PAGECACHE_LIMIT="no"
-    # The configuration file should overwrite the three parameters above
-    if [ -r /etc/sysconfig/sapconf ]; then
-        source /etc/sysconfig/sapconf
-    fi
-    if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
-        if [ -z "$PAGECACHE_LIMIT_MB" ]; then
-                log "ATTENTION: PAGECACHE_LIMIT_MB not set in sysconfig file."
-                log "Disabling page cache limit"
-                PAGECACHE_LIMIT_MB="0"
-        fi
-        save_value vm.pagecache_limit_mb $(sysctl -n vm.pagecache_limit_mb)
-        log "Setting vm.pagecache_limit_mb=$PAGECACHE_LIMIT_MB"
-        sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT_MB"
-        if [ -z "$PAGECACHE_LIMIT_IGNORE_DIRTY" ]; then
-                log "ATTENTION: PAGECACHE_LIMIT_IGNORE_DIRTY not set in sysconfig file."
-                log "Setting system default '0'"
-                PAGECACHE_LIMIT_IGNORE_DIRTY="0"
-        fi
-        # Set ignore_dirty
-        save_value vm.pagecache_limit_ignore_dirty $(sysctl -n vm.pagecache_limit_ignore_dirty)
-        log "Setting vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
-        sysctl -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
-    else
-        # Disable pagecache limit by setting it to 0
-        save_value vm.pagecache_limit_mb $(sysctl -n vm.pagecache_limit_mb)
-        log "Disabling page cache limit"
-        sysctl -w "vm.pagecache_limit_mb=0"
-    fi
-    log "--- Finished application of page cache limit"
-}
-
-# revert_page_cache_limit reverts page cache limit parameter value tuned by either Netweaver or HANA recommendation.
-revert_page_cache_limit() {
-    log "--- Going to revert page cache limit"
-    # Restore pagecache settings
-    PAGECACHE_LIMIT=$(restore_value vm.pagecache_limit_mb)
-    [ "$PAGECACHE_LIMIT" ] && log "Restoring vm.pagecache_limit_mb=$PAGECACHE_LIMIT" && sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT"
-    PAGECACHE_LIMIT_IGNORE_DIRTY=$(restore_value vm.pagecache_limit_ignore_dirty)
-    [ "$PAGECACHE_LIMIT_IGNORE_DIRTY" ] && log "Restoring vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY" && sysctl -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
-    log "--- Finished reverting page cache limit"
-}
-
 # tune_uuidd_socket unconditionally enables and starts uuidd.socket as recommended in "1984787 - Installation notes".
 tune_uuidd_socket() {
     log "--- Going to enable uuidd.socket"

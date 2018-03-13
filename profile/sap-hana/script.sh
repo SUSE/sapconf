@@ -15,8 +15,6 @@ start() {
     log "--- Going to apply SAP tuning techniques"
     # Common tuning techniques apply to HANA and Netweaver
     tune_preparation
-    # SAP note 1557506 - Linux paging improvements
-    tune_page_cache_limit
     # SAP note 1984787 - Installation notes
     tune_uuidd_socket
 
@@ -98,7 +96,6 @@ stop() {
     log "--- Going to revert SAP tuned parameters"
 
     revert_preparation
-    revert_page_cache_limit
     revert_uuidd_socket
     #revert_shmmni
 

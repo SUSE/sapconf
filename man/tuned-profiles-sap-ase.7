@@ -36,8 +36,6 @@ Maximum number of open file descriptors in /etc/security/limits.conf
 .IP \[bu]
 Set the maximum number of OS tasks each user may run concurrently (UserTasksMax)
 .IP \[bu]
-Pagecache limit: vm.pagecache_limit_mb, pagecache_limit_ignore_dirty
-.IP \[bu]
 Set number of requests for block devices:
 .br /sys/block/sd*/queue/nr_requests
 .IP \[bu]
@@ -63,7 +61,7 @@ tuned-adm profile sap-ase
 .PP
 \fI/etc/sysconfig/sapconf\fR
 .RS 4
-Define the behaviour and overrides for the common settings from 1275776 and tuning pagecache limit.
+Define the behaviour and overrides for the common settings from 1275776.
 .RE
 .PP
 \fI/etc/sysconfig/sapnote\-1680803\fR
