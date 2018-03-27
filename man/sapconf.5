@@ -27,9 +27,9 @@ The file consists of 3 parts. The first part contains all parameters that can be
 .PP
 In the file you can find the actual recommended value, the source SAP Note, a short explanation and where this parameter is set.
 .br
-If you change parameter values please don't forget to restart tuned to get the changes take effect.
+If you change parameter values please don't forget to restart sapconf service to get the changes take effect.
 .PP
-The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. If a newer configuration file will be delivered, this file will be placed as /etc/sysconfig/sapconf.rpmnew. Please make sure that you merge these two files before you restart the tune daemon.
+The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. If a newer configuration file will be delivered, this file will be placed as /etc/sysconfig/sapconf.rpmnew. Please make sure that you merge these two files before you restart the sapconf service.
 
 .SH DESCRIPTION OF PART 1
 .PP
@@ -336,13 +336,13 @@ The parameters of the third part of the configuration file are not changeable. T
 These values are profile independent. They describe requirements and settings during the sapconf package installation. See sapconf(7) for details.
 .TP 4
 .BI sysstat
-Package requirement. The service is enabled and started during post installation script.
+Package requirement. The service is started after installation of the package.
 .br
 SAP Note 1310037
 .PP
 .TP 4
 .BI uuidd
-Package requirement. The service is enabled and started during post installation script.
+Package requirement. The service is enabled and started after installation of the package.
 .br
 SAP Note 1984787
 .PP
@@ -372,25 +372,18 @@ SAP Note 2205917, 1984787
 central configuration file
 .RE
 .PP
-\fI/usr/lib/tuned/sap-<profile>/tuned.conf\fR
+\fI/usr/lib/tuned/sapconf/tuned.conf\fR
 .RS 4
 profile special configuration file
 .br A description of the used values can be found at the end of the central configuration file \fI/etc/sysconfig/sapconf\fR
-The profiles are stored in subdirectories below \fI/usr/lib/tuned\fP. If you
-need to customize the profiles, you can copy them to \fI/etc/tuned\fP and modify
-them as you need. When loading profiles with the same name, the /etc/tuned takes
-precedence. In such case you will not lose your customized profiles  between
-tuned updates.
+The profile is stored in a subdirectory below \fI/usr/lib/tuned\fP. If you need to customize the profile, you can copy it to \fI/etc/tuned\fP and modify it as you need. When loading profiles with the same name, the /etc/tuned takes precedence. In such case you will not lose your customized profiles between tuned updates.
 .RE
 
 .SH SEE\ ALSO
 .BR sapconf (7)
 .BR tuned (8)
 .BR tuned\-adm (8)
-.BR tuned-profiles-sap-hana(7)
-.BR tuned-profiles-sap-netweaver(7)
-.BR tuned-profiles-sap-ase(7)
-.BR tuned-profiles-sap-bobj(7)
+.BR tuned-profiles-sapconf(7)
 
 .SH AUTHORS
 .na
