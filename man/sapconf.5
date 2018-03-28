@@ -124,7 +124,7 @@ SAP Note 1275776
 Maximum number of open files for SAP application groups sapsys, sdba, and dba.
 Consult with manual page limits.conf(5) for the correct syntax.
 .br
-There is no rollback during revert (change of tuned profile or stop of tuned.)
+There is no rollback during revert (change of tuned profile or stop of sapconf service.)
 .PP
 Limit settings in \fB/etc/security/limits.conf\fP during the common part (tune_preparation) of the scripting
 .br
@@ -341,7 +341,7 @@ Package requirement. The service is started after installation of the package.
 SAP Note 1310037
 .PP
 .TP 4
-.BI uuidd
+.BI uuidd.socket
 Package requirement. The service is enabled and started after installation of the package.
 .br
 SAP Note 1984787
