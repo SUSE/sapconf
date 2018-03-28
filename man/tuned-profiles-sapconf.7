@@ -14,12 +14,12 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH TUNED_PROFILES_SAP_NETWEAVER "7" "December 2017" "Adaptive system tuning daemon" "tuned"
+.TH TUNED_PROFILES_SAPCONF "7" "March 2018" "Adaptive system tuning daemon" "tuned"
 .SH NAME
-tuned\-profiles\-sap\-netweaver - Tuning profile for SAP Netweaver.
+tuned\-profiles\-sapconf - Tuning profile for SAP workloads.
 
 .SH DESCRIPTION
-The tuning profile automatically optimises kernel parameters and system configuration for running SAP Netweaver softwares.
+The tuning profile automatically optimises kernel parameters and system configuration for running SAP workloads like Netweaver, Sybase/ASE, BOBJ and HANA and Business One softwares.
 
 The following parameters are calculated and tuned, according to various SAP notes and best practices:
 .IP \[bu]
@@ -33,8 +33,6 @@ Maximum number of memory mapping regions: vm.max_map_count
 .IP \[bu]
 Maximum number of open file descriptors in /etc/security/limits.conf
 .IP \[bu]
-Set the maximum number of OS tasks each user may run concurrently (UserTasksMax)
-.IP \[bu]
 Dirty memory: Set vm.dirty_bytes and vm.dirty_background_bytes
 .IP \[bu]
 Disable TCP slow start on idle connections: net.ipv4.tcp_slow_start_after_idle
@@ -45,24 +43,25 @@ Turn off NUMA-balancing: kernel.numa_balancing
 .IP \[bu]
 Disable transparent_hugepage
 .IP \[bu]
-CPU power management, disk cache, kernel scheduling and VM tweaks (inherited from throughput-performance profile).
+CPU power management and disk cache
 .IP \[bu]
 Enable uuidd.socket.
 
-Note that
-.BR tuned-profiles-sap-hana (7) and 
-.BR tuned-profiles-sap-netweaver (7)
-use the same tuning values for HANA and Netweaver workloads to get a better base in the future for mixed HANA and ABAB workloads on one system. That means the use of the same tuned.conf and script.sh file for both profiles. 
+Note that the former profiles
+.BR sap-netweaver 
+.BR sap-hana
+.BR sap-ase and
+.BR sap-bobj
+now are consolidated to one base sapconf profile to get a better base in the future for mixed HANA and ABAB workloads on one system.
 
 .SH "SAP NOTES"
-The tuned parameters are calculated according to SAP note number 900929, 941735, 1275776, 1310037, 1557506, 1771258, 1984787, 2031375, 2055470, 2131662, 2205917, 2534844 and TID_7010287
+The tuned parameters are calculated according to SAP note number 900929, 941735, 1275776, 1310037, 1771258, 1984787, 2031375, 2055470, 2131662, 2205917, 2534844 and TID_7010287
 .br See the comments in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR for details.
 
-
 .SH ACTIVATION
-To activate the SAP Netweaver tuning profile, run as root:
+To activate the sapconf tuning profile, run as root:
 
-tuned-adm profile sap-netweaver
+tuned-adm profile sapconf
 
 .SH "FILES"
 .PP
@@ -71,17 +70,16 @@ tuned-adm profile sap-netweaver
 the central configuration file
 .RE
 .PP
-\fI/usr/lib/tuned/sap-hana/tuned.conf\fR
+\fI/usr/lib/tuned/sapconf/tuned.conf\fR
 .RS 4
-the sap-hana profile special configuration file. The same file is used for the sap-netweaver profile.
+the sapconf profile special configuration file.
 .RE
 
 .SH "SEE ALSO"
 .BR sapconf (5)
 .BR sapconf (7)
-.BR tuned-profiles-sap-hana(7)
 .BR tuned (8)
 .BR tuned\-adm (8)
 .SH AUTHOR
 .NF
-Howard Guo <hguo@suse.com>, Angela Briel <abriel@suse.com>
+Howard Guo, Angela Briel

@@ -10,10 +10,10 @@ Requires=uuidd.socket
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStartPre=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == "" ]]; then tuned-adm profile sap-netweaver &> /dev/null; fi'
+ExecStartPre=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == "" ]]; then tuned-adm profile sapconf &> /dev/null; fi'
 ExecStart=/usr/bin/systemctl start tuned.service
-ExecReload=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == sap-* ]]; then /usr/bin/systemctl restart tuned.service; fi'
-ExecStop=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == sap-* ]]; then /usr/bin/systemctl stop tuned.service >/dev/null 2>&1;  > /etc/tuned/active_profile; fi'
+ExecReload=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == sapconf ]]; then /usr/bin/systemctl restart tuned.service; fi'
+ExecStop=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == sapconf ]]; then /usr/bin/systemctl stop tuned.service >/dev/null 2>&1;  > /etc/tuned/active_profile; fi'
 
 [Install]
 WantedBy=multi-user.target
