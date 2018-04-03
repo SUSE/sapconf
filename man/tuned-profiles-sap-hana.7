@@ -33,8 +33,6 @@ Maximum number of memory mapping regions: vm.max_map_count
 .IP \[bu]
 Maximum number of open file descriptors in /etc/security/limits.conf
 .IP \[bu]
-Set the maximum number of OS tasks each user may run concurrently (UserTasksMax)
-.IP \[bu]
 Pagecache limit: vm.pagecache_limit_mb, pagecache_limit_ignore_dirty
 .IP \[bu]
 Dirty memory: Set vm.dirty_bytes and vm.dirty_background_bytes
@@ -47,7 +45,7 @@ Turn off NUMA-balancing: kernel.numa_balancing
 .IP \[bu]
 Disable transparent_hugepage
 .IP \[bu]
-CPU power management, disk cache, kernel scheduling and VM tweaks (inherited from throughput-performance profile).
+CPU power management and disk cache
 .IP \[bu]
 Enable uuidd.socket.
 
@@ -86,4 +84,4 @@ the sap-hana profile special configuration file. The same file is used for the s
 .BR tuned\-adm (8)
 .SH AUTHOR
 .NF
-Howard Guo <hguo@suse.com>, Angela Briel <abriel@suse.com>
+Howard Guo, Angela Briel

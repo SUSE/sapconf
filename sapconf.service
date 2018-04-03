@@ -1,11 +1,18 @@
 [Unit]
 Description=sapconf
 After=syslog.target systemd-sysctl.service network.target
+# SAP Note 1310037 (still valid)
+Wants=sysstat.service
+# Requested by https://bugzilla.suse.com/show_bug.cgi?id=983454 :
+# UUID should work properly (enabled) as soon as this package is installed.
+Requires=uuidd.socket
 
 [Service]
-ExecStart=/usr/sbin/sapconf start
-RemainAfterExit=true
 Type=oneshot
+RemainAfterExit=true
+ExecStart=/usr/sbin/sapconf start
+ExecReload=/usr/sbin/sapconf reload
+ExecStop=/usr/sbin/sapconf stop
 
 [Install]
 WantedBy=multi-user.target

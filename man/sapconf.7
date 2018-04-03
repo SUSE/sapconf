@@ -41,6 +41,22 @@ Every tuning action is logged to \fI/var/log/sapconf.log\fP
 To activate a sapconf tuning profile, run as root:
 .PP
 tuned-adm profile <profile>
+.PP
+Make sure that the sapconf service is enabled and running.
+.br
+This is normally done automatically after the sapconf package installation.
+.PP
+Check
+.br
+systemctl status sapconf.service
+.PP
+Enable
+.br
+systemctl enabled sapconf.service
+.PP
+Start
+.br
+systemctl start sapconf.service
 
 .SH PROFILES
 At the moment we're providing the following pre\-defined profiles:
@@ -74,11 +90,11 @@ See the comments in the central sapconf configuration file \fI/etc/sysconfig/sap
 The following package requirements exist for the sapconf package:
 .TP 4
 .BI "sysstat" 
-service is enabled and started during package installation (see SAP Note 1310037)
+service is started after package installation (see SAP Note 1310037)
 .PP
 .TP 4
-.BI "uuidd"
-service is enabled and started during package installation (see SAP Note 1984787)
+.BI "uuidd.socket"
+service is enabled and started after package installation (see SAP Note 1984787)
 .PP
 .TP 4
 .BI "sapinit-systemd-compat"
@@ -86,7 +102,7 @@ installation requirement for SLES12GA and SLES12SP1 (see SAP Note 1984787). This
 .PP
 This information is additionally commented in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR.
 .PP
-Note: These settings are profile independent. They will be applied during the post script stage of the sapconf package installation.
+Note: These settings are profile independent. They will be applied during the post stage of the sapconf package installation.
 .PP
 Note: If the package sapconf is removed from the system, the following settings will still remain:
 .TP 4
@@ -101,7 +117,7 @@ Please remove the entries manually, if they are not needed any longer.
 .PP
 .TP 4
 .BI "A running sysstat service."
-Please stop and disable the sysstat service manually, if it is not needed any longer.
+Please stop the sysstat service manually, if it is not needed any longer.
 .PP
 .TP 4
 .BI /etc/sysconfig/sapconf
@@ -113,7 +129,7 @@ Private copies of tuned profiles in /etc/tuned are not removed during package re
 .PP
 .TP 4
 .BI /var/log/sapconf.log
-The log file of sapconf will not be reomoved during package removal.
+The log file of sapconf will not be removed during package removal.
 .PP
 
 
@@ -125,9 +141,9 @@ central configuration file
 .br
 Here you can find all parameters, wich are affected by sapconf. The actual setting value, the source SAP Note, a short explanation and where this parameter is set.
 .br
-If you change parameter values please don't forget to restart tuned to get the changes take effect.
+If you change parameter values please don't forget to reload sapconf service to get the changes take effect.
 .PP
-The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. If a newer configuration file will be delivered, this file will be placed as /etc/sysconfig/sapconf.rpmnew. Please make sure that you merge these two files before you restart the tune daemon.
+The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. If a newer configuration file will be delivered, this file will be placed as /etc/sysconfig/sapconf.rpmnew. Please make sure that you merge these two files before you reload the sapconf service.
 .RE
 .PP
 \fI/usr/lib/tuned/sap-<profile>/tuned.conf\fR
@@ -136,11 +152,7 @@ profile special configuration file
 .br
 A description of the used values can be found at the end of the central configuration file \fI/etc/sysconfig/sapconf\fR
 .br
-The profiles are stored in subdirectories below \fI/usr/lib/tuned\fP. If you
-need to customize the profiles, you can copy them to \fI/etc/tuned\fP and modify
-them as you need. When loading profiles with the same name, the /etc/tuned takes
-precedence. In such case you will not lose your customized profiles  between
-tuned updates.
+The profiles are stored in subdirectories below \fI/usr/lib/tuned\fP. If you need to customize the profiles, you can copy them to \fI/etc/tuned\fP and modify them as you need. When loading profiles with the same name, the /etc/tuned takes precedence. In such case you will not lose your customized profiles between tuned updates.
 .RE
 .PP
 \fI/var/log/sapconf\.log\fR
