@@ -27,7 +27,10 @@ sapconf activates SAP Netweaver, SAP ASE/Sybase, SAP Business OBJects (BOBJ) or 
 .SH ACTIONS
 
 .IP \[bu]
-start,restart,try-restart,reload - If the tune daemon does not have any profile active, activiate SAP Netweaver tuning profile. Otherwise leave the profile choice alone and activate tune daemon.
+start,restart,try-restart - If the tune daemon does not have any profile active, activiate SAP Netweaver tuning profile. Otherwise leave the profile choice alone and activate tune daemon.
+
+.IP \[bu]
+reload - If the current tuned profile is a sapconf profile, restart the tuned service.
 
 .IP \[bu]
 netweaver - Activate SAP Netweaver tuning profile. Exit 1 on failure.
@@ -42,7 +45,7 @@ ase,sybase - Activate SAP ASE (Sybase) tuning profile. Exit 1 on failure.
 bobj - Activate SAP Business OBJects (BOBJ) tuning profile. Exit 1 on failure.
 
 .IP \[bu]
-stop - Do nothing.
+stop - If the current tuned profile is a sapconf profile, stop the tune daemon and remove the sapconf profile from the active tuned profile file.
 
 .IP \[bu]
 status - Report the status of tune daemon. Exit 1 on failure.

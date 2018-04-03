@@ -33,7 +33,7 @@ if ! rpm -q tuned &> /dev/null; then
 fi
 
 case "$1" in
-  start|restart|try-restart|reload)
+  start|restart|try-restart)
     # To remain compatible with the original implementation of sapconf,
     # if neither sap-netweaver nor sap-hana is active, sap-netwever profile
     # will be activiated via tune daemon.
@@ -49,6 +49,12 @@ case "$1" in
       systemctl start tuned
     fi
     systemctl status tuned &> /dev/null && exit 0 || exit 1
+  ;;
+
+  reload)
+    if [[ $(cat /etc/tuned/active_profile) == sap-* ]]; then
+      /usr/bin/systemctl restart tuned.service
+    fi
   ;;
 
   netweaver)
@@ -98,7 +104,14 @@ case "$1" in
   stop)
     # To remain compatible with the original implementation of sapconf,
     # the stop action does nothing.
-    echo 'Nothing to do.'
+    # changed behaviour because of fate#325363
+    # if the current tuned profile is a sapconf profile
+    # stop tuned and remove sapconf profile from active tuned profil
+    if [[ $(cat /etc/tuned/active_profile) == sap-* ]]; then
+        /usr/bin/systemctl stop tuned >/dev/null 2>&1
+        > /etc/tuned/active_profile
+        systemctl status tuned &> /dev/null && exit 1
+    fi
     exit 0
   ;;
 
@@ -108,7 +121,7 @@ case "$1" in
   ;;
 
   *)
-    echo "Usage: $0 {start|hana|b1|ase|sybase|bobj|stop|status}"
+    echo "Usage: $0 {start|reload|hana|b1|ase|sybase|bobj|stop|status}"
     exit 1
   ;;
 
