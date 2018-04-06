@@ -362,4 +362,3 @@ THP=never
 # UserTasksMax will be set to 'infinity'
 # A message will indicate if a reboot/restart is necessary.
 #
-#SAPCONF_END=""
