@@ -13,7 +13,7 @@ cd /usr/lib/sapconf || exit 1
 
 start() {
     log "--- Going to apply SAP tuning techniques"
-    # Common tuning techniques apply to HANA and Netweaver
+    # Common tuning techniques apply to HANA and NetWeaver
     tune_preparation
     # SAP note 1984787 - Installation notes
     tune_uuidd_socket
@@ -30,18 +30,15 @@ start() {
 
     # SAP Note 2534844, bsc#874778
     save_value kernel.shmmni $(sysctl -n kernel.shmmni)
-    SHMMNI_DEF=$(chk_conf_val SHMMNI_DEF 0)
-    increase_sysctl kernel.shmmni $SHMMNI_DEF
+    chk_and_set_conf_val SHMMNI kernel.shmmni
 
     # TID_7010287
     save_value vm.dirty_bytes $(sysctl -n vm.dirty_bytes)
     save_value vm.dirty_ratio $(sysctl -n vm.dirty_ratio) # value needed for revert of vm.dirty_bytes
-    DIRTY_BYTES_DEF=$(chk_conf_val DIRTY_BYTES_DEF 0)
-    increase_sysctl vm.dirty_bytes $DIRTY_BYTES_DEF
+    chk_and_set_conf_val DIRTY_BYTES vm.dirty_bytes
     save_value vm.dirty_background_bytes $(sysctl -n vm.dirty_background_bytes)
     save_value vm.dirty_background_ratio $(sysctl -n vm.dirty_background_ratio) # value needed for revert of vm.dirty_background_bytes
-    DIRTY_BG_BYTES_DEF=$(chk_conf_val DIRTY_BG_BYTES_DEF 0)
-    increase_sysctl vm.dirty_background_bytes $DIRTY_BG_BYTES_DEF
+    chk_and_set_conf_val DIRTY_BG_BYTES vm.dirty_background_bytes
 
     # SAP note
     cur_val=$(sysctl -n net.ipv4.tcp_slow_start_after_idle)
