@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "March 2018" "util-linux" "System Administration"
+.TH sapconf 8 "April 2018" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -29,9 +29,7 @@ Beside the customization in \fI/etc/tuned\fP the main customization can be done 
 .br
 All parameters to be set by sapconf are read from this file. 
 .br
-But be in mind: Higher system value will \fBever\fP remain unchanged. sapconf will never reduce any setting.
-.br
-sapconf will respect higher values set by the system or by the administrator using sysctl configuration files. Values set on the fly with sysctl command will respect too, but do not survive a system reboot.
+Be in mind: Higher or lower system values set by the system, the SAP installer or by the administrator using sysctl command or sysctl configuration files will be overwritten by sapconf, if they are part of the sapconf sysconfig file.
 .PP
 The process is splitted in 2 scripts. The \fIcommon.sh\fP is inherited by the sapconf profile and \fIsapconf/script.sh\fP will do the whole tuning for the selected sapconf profile.
 .PP
@@ -65,7 +63,7 @@ At the moment we're providing one pre\-defined profile:
 Tuning profile for SAP workload. It is the default profile. If the tune daemon does not have any profile active, \fBsapconf.service\fR will activate this sapconf tuning profile during start.
 See the man page \fBtuned-profiles-sapconf(7)\fR for details.
 .br
-To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA, Sybase/ASE, BOBJ and Netweaver workloads. That means that the former profiles "sap\-netweaver", "sap\-hana", "sap\-ase" and "sap\-bobj" existing in SLE12 are consolidated in one basic sapconf profile.
+To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA, Sybase/ASE, BOBJ and NetWeaver workloads. That means that the former profiles "sap\-netweaver", "sap\-hana", "sap\-ase" and "sap\-bobj" existing in SLE12 are consolidated in one basic sapconf profile.
 
 .SH "SAP NOTES"
 All settings are done according to SAP note number 900929, 941735, 1275776, 1310037, 1557506, 1771258, 1984787, 2031375, 2055470, 2131662, 2205917, 2534844 and TID_7010287
@@ -106,7 +104,7 @@ Please stop the sysstat service manually, if it is not needed any longer.
 The central configuration file of sapconf is not removed during package removal.
 .PP
 .TP 4
-.BI /etc/tuned/sap\-*
+.BI /etc/tuned/sap\*
 Private copies of tuned profiles in /etc/tuned are not removed during package removal.
 .PP
 .TP 4
@@ -125,7 +123,7 @@ Here you can find all parameters, wich are affected by sapconf. The actual setti
 .br
 If you change parameter values please don't forget to reload sapconf service to get the changes take effect.
 .PP
-The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. If a newer configuration file will be delivered, this file will be placed as /etc/sysconfig/sapconf.rpmnew. Please make sure that you merge these two files before you reload the sapconf service.
+The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. In some cases the old configuration file is preserved as /etc/sysconfig/sapconf.rpmsave and the new sapconf sysconfig file is copied to /etc/sysconfig/sapconf. Please make sure that you merge needed changes from this file to the new /etc/sysconfig/sapconf file before you restart the sapconf service.
 .RE
 .PP
 \fI/usr/lib/tuned/sapconf/tuned.conf\fR

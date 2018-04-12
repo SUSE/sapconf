@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 5 "March 2018" "sapconf configuration file"
+.TH sapconf 5 "April 2018" "sapconf configuration file"
 .SH NAME
 sapconf \- central configuration file of sapconf
 
@@ -29,25 +29,13 @@ In the file you can find the actual recommended value, the source SAP Note, a sh
 .br
 If you change parameter values please don't forget to restart sapconf service to get the changes take effect.
 .PP
-The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. If a newer configuration file will be delivered, this file will be placed as /etc/sysconfig/sapconf.rpmnew. Please make sure that you merge these two files before you restart the sapconf service.
+The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. In some cases the old configuration file is preserved as /etc/sysconfig/sapconf.rpmsave and the new sapconf sysconfig file is copied to /etc/sysconfig/sapconf. Please make sure that you merge needed changes from this file to the new /etc/sysconfig/sapconf file before you restart the sapconf service.
 
 .SH DESCRIPTION OF PART 1
 .PP
 .TP 4
-.BI TMPFS_SIZE_MIN=8388608
-The lower tuning limit of the size of tmpfs mounted on /dev/shm in KiloBytes. It should not be smaller than 8388608 (8GB).
-.br
-The size of tmpfs mounted on \fB/dev/shm\fP is calculated as maximum of current size, (RAM + SWAP) * VSZ_TMPFS_PERCENT and TMPFS_SIZE_MIN
-.PP
-.RS 4
-Set in the common part (tune_preparation) of the scripting
-.br
-SAP Note 941735
-.RE
-.PP
-.TP 4
 .BI VSZ_TMPFS_PERCENT=75
-Size of the requested tmpfs in percent of the virtual memory. Depending on the size of TMPFS_SIZE_MIN, the size of the virtual memory (physical+swap), and the current size the maximum value is choosen
+Size of the requested tmpfs in percent of the virtual memory. Depending on the size of the virtual memory (physical+swap) the value is calculated by (RAM + SWAP) * VSZ_TMPFS_PERCENT/100.
 .PP
 .RS 4
 Set in the common part (tune_preparation) of the scripting
@@ -56,12 +44,10 @@ SAP Note 941735
 .RE
 .PP
 .TP 4
-.BI SHMALL_MIN=1152921504606846720
-The default tuning limit of the maximum total number of shared memory pages. This number should not be less than 20 GB divided by the size in bytes of one page. To determine the current page size run the command "getconf PAGESIZE".
+.BI SHMALL=1152921504606846720
+The default tuning limit of the maximum total number of shared memory pages. Hence, SHMALL should always be at least ceil(shmmax/PAGE_SIZE). To determine the current page size run the command "getconf PAGESIZE".
 .br
-Calculated by (total (system+swap) memory size in KB * 1024 / pagesize)
-.br
-\fBkernel.shmall\fP is set to the maximum of the calculated value, SHMALL_MIN value from this file and the actual system setting
+\fBkernel.shmall\fP is set to the SHMALL value from this file
 .PP
 .RS 4
 Linux kernel setting, set in the common part (tune_preparation) of the scripting
@@ -70,14 +56,12 @@ SAP Note 941735, HANA Administration Guide
 .RE
 .PP
 .TP 4
-.BI SHMMAX_MIN=18446744073709551615
-The lower tuning limit of the maximum amount of a single shared memory segment in Bytes. This number should not be less than 20 GB (SAP Note 941735).
+.BI SHMMAX=18446744073709551615
+The lower tuning limit of the maximum amount of a single shared memory segment in Bytes.
 .br
-Calculated by \fB(total (system+swap) memory size in KB * 1024)\fP
+\fBkernel.shmmax\fP is set to the SHMMAX value from this file
 .br
-\fBkernel.shmmax\fP is set to the maximum of the calculated value, SHMMAX_MIN value from this file and the actual system setting
-.br
-SHMMAX_MIN set to ULONG_MAX (18446744073709551615)
+SHMMAX set to ULONG_MAX (18446744073709551615)
 .PP
 .RS 4
 Linux kernel setting, set in the common part (tune_preparation) of the scripting
@@ -89,19 +73,19 @@ SAP Note 941735, HANA Administration Guide
 .BI "Semaphore limits"
 The next 4 values define the Semaphore limits \fBkernel.sem\fP
 .br
-kernel.sem = max(system, SEMMSL_MIN) max(system, SEMMNS_MIN) max(system, SEMOPM_MIN) max(system, SEMMNI_MIN)
+kernel.sem = SEMMSL SEMMNS SEMOPM SEMMNI
 .RS 4
 .TP 3
-.BI SEMMSL_MIN=32000
+.BI SEMMSL=32000
 The lower tuning limit of the maximum number of semaphores per semaphore set.
 .TP 3
-.BI SEMMNS_MIN=1024000000
+.BI SEMMNS=1024000000
 The lower tuning limit of the maximum total number of semaphores.
 .TP 3
-.BI SEMOPM_MIN=500
+.BI SEMOPM=500
 The lower tuning limit of the maximum number of semaphore operations that can be performed per "semop" system call.
 .TP 3
-.BI SEMMNI_MIN=32000
+.BI SEMMNI=32000
 The lower tuning limit of maxium total number of semaphore sets.
 .PP
 Semaphore limits, set in the common part (tune_preparation) of the scripting
@@ -133,13 +117,13 @@ SAP Note 1771258
 .RE
 .PP
 .TP 4
-.BI MAX_MAP_COUNT_DEF=2147483647
+.BI MAX_MAP_COUNT=2147483647
 The value is the maximum number of memory map areas a process may have.
 Memory map areas are used as a side-effect of calling malloc, directly by mmap and mprotect, and also when loading shared libraries.
 .br
-\fBvm.max_map_count\fP is set to the maximum of MAX_MAP_COUNT_DEF value from this file and the actual system setting
+\fBvm.max_map_count\fP is set to the MAX_MAP_COUNT value from this file
 .br
-MAX_MAP_COUNT_DEF set to MAX_INT (2147483647)
+MAX_MAP_COUNT set to MAX_INT (2147483647)
 .PP
 .RS 4
 Memory Management setting in the common part (tune_preparation) of the scripting
@@ -148,8 +132,10 @@ SAP Note 1275776, 900929, HANA Administration Guide
 .RE
 .PP
 .TP 4
-.BI SHMMNI_DEF=32768
-The value is the maximum number of shared memory identifies available in the system. \fBkernel.shmmni\fP is set to the maximum of SHMMNI_DEF value from this file and the actual system setting
+.BI SHMMNI=32768
+The value is the maximum number of shared memory identifies available in the system. 
+.br
+\fBkernel.shmmni\fP is set to the SHMMNI value from this file
 .PP
 .RS 4
 Linux kernel setting, set in the profile specific part of the scripting
@@ -158,7 +144,7 @@ SAP Note 2534844, bsc#874778, HANA Administration Guide
 .RE
 .PP
 .TP 4
-.BI DIRTY_BYTES_DEF=629145600
+.BI DIRTY_BYTES=629145600
 Contains the amount of dirty memory at which a process generating disk writes will itself start writeback.
 .br
 Note: \fBvm.dirty_bytes\fP is the counterpart of \fBvm.dirty_ratio\fP. Only one of them may be specified at a time. When one sysctl is written it is immediately taken into account to evaluate the dirty memory limits and the other appears as 0 when read.
@@ -167,7 +153,7 @@ Note: when changing the tuned profile or switching off tuned, both values will b
 .br
 Note: the minimum value allowed for dirty_bytes is two pages (in bytes); any value lower than this limit will be ignored and the old configuration will be retained.
 .br
-\fBvm.dirty_bytes\fP is set to the maximum of DIRTY_BYTES_DEF value from this file and the actual system setting
+\fBvm.dirty_bytes\fP is set to the DIRTY_BYTES value from this file
 .PP
 .RS 4
 Memory Management setting in the profile specific part of the scripting
@@ -176,14 +162,14 @@ TID_7010287
 .RE
 .PP
 .TP 4
-.BI DIRTY_BG_BYTES_DEF=314572800
+.BI DIRTY_BG_BYTES=314572800
 Contains the amount of dirty memory at which the background kernel flusher threads will start writeback.
 .br
 Note: \fBvm.dirty_background_bytes\fP is the counterpart of \fBvm.dirty_background_ratio\fP.  Only one of them may be specified at a time. When one sysctl is written it is immediately taken into account to evaluate the dirty memory limits and the other appears as 0 when read.
 .br
 Note: when changing the tuned profile or switching off tuned, both values will be set back to their previous settings.
 .br
-\fBvm.dirty_background_bytes\fP is set to the maximum of DIRTY_BG_BYTES_DEF value from this file and the actual system setting
+\fBvm.dirty_background_bytes\fP is set to the DIRTY_BG_BYTES value from this file
 .PP
 .RS 4
 Memory Management setting in the profile specific part of the scripting
@@ -244,7 +230,7 @@ no longer supported since SLE15.
 .SH DESCRIPTION OF PART 2
 The parameters of the second part of the configuration file are not changeable in /etc/sysconfig/sapconf. They are part of this file for documentation purpose only.
 .PP
-These values are set in the configuration file \fB/usr/lib/tuned/<profile>/tuned.conf\fP, where <profile> may be sap-hana or sap-netweaver. See sapconf(7) for details how to change values from these configuration files.
+These values are set in the configuration file \fB/usr/lib/tuned/<profile>/tuned.conf\fP, where <profile> is sapconf. See sapconf(7) for details how to change values from these configuration files.
 .PP
 .TP 4
 .BI "#energy_perf_bias = performance"
