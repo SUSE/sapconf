@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "December 2017" "util-linux" "System Administration"
+.TH sapconf 8 "April 2018" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -22,18 +22,18 @@ sapconf \- Kernel and system configuration for SAP products
 sapconf ACTION_NAME
 
 .SH DESCRIPTION
-sapconf activates SAP Netweaver, SAP ASE/Sybase, SAP Business OBJects (BOBJ) or HANA/BusinessOne tuning profiles depending on the command line action input. sapconf is deprecated in favour of tune daemon (tuned) and its profiles "sap-netweaver", "sap-hana", "sap-ase", "sap-bobj".
+sapconf activates SAP NetWeaver, SAP ASE/Sybase, SAP Business OBJects (BOBJ) or HANA/BusinessOne tuning profiles depending on the command line action input. sapconf is deprecated in favour of tune daemon (tuned) and its profiles "sap-netweaver", "sap-hana", "sap-ase", "sap-bobj".
 
 .SH ACTIONS
 
 .IP \[bu]
-start,restart,try-restart - If the tune daemon does not have any profile active, activiate SAP Netweaver tuning profile. Otherwise leave the profile choice alone and activate tune daemon.
+start,restart,try-restart - If the tune daemon does not have any profile active, activiate SAP NetWeaver tuning profile. Otherwise leave the profile choice alone and activate tune daemon.
 
 .IP \[bu]
 reload - If the current tuned profile is a sapconf profile, restart the tuned service.
 
 .IP \[bu]
-netweaver - Activate SAP Netweaver tuning profile. Exit 1 on failure.
+netweaver - Activate SAP NetWeaver tuning profile. Exit 1 on failure.
 
 .IP \[bu]
 hana,b1 - Activate SAP HANA or BusinessOne tuning profile. Exit 1 on failure.

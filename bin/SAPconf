@@ -15,8 +15,8 @@
 #
 # This program exists purely for compatibility reasons.
 # Apparently on ancient SLES releases "SAPconf" was supposed to tune the
-# system for SAP Netweaver products.
+# system for SAP NetWeaver products.
 # Therefore, this program calls sapconf with action "start" to trigger
-# activation of SAP Netweaver tuning profile.
+# activation of SAP NetWeaver tuning profile.
 
 exec -a $0 /usr/sbin/sapconf start

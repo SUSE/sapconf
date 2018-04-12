@@ -1,25 +1,14 @@
 ## Path:	Productivity/Other
 ## Description: Limits for system tuning profiles of sapconf
-## ServiceRestart: tuned
+## ServiceRestart: sapconf
 ##
 ## This file is sourced in the common (lib/common.sh) and profile special
 ## scripts (sap-hana/script.sh, sap-netweaver/script.sh) of the tuned
 ## integration of sapconf.
 
-# The lower tuning limit of the size of tmpfs mounted on /dev/shm in KiloBytes.
-# It should not be smaller than 8388608 (8GB).
-#
-# The size of tmpfs mounted on /dev/shm is calculated as maximum of
-# current size, (RAM + SWAP) * 0.75, TMPFS_SIZE_MIN
-#
-# SAP Note 941735
-#
-TMPFS_SIZE_MIN=8388608
-
-# Size of the requested tmpfs in percent of the virtual memory.
-# Depending on the size of TMPFS_SIZE_MIN, the size of the
-# virtual memory (physical+swap), and the current size the
-# maximum value is choosen
+# Size of tmpfs mounted on /dev/shm in percent of the virtual memory.
+# Depending on the size of the virtual memory (physical+swap) the
+# value is calculated by (RAM + SWAP) * VSZ_TMPFS_PERCENT/100
 # Set to 75
 #
 # SAP Note 941735
@@ -27,40 +16,34 @@ TMPFS_SIZE_MIN=8388608
 VSZ_TMPFS_PERCENT=75
 
 # kernel.shmall
-# The default tuning limit of the maximum total number of shared memory pages.
-# This number should not be less than 20 GB divided by the size in
-# bytes of one page. To determine the current page size run the
-# command "getconf PAGESIZE".
+# This parameter sets the total amount of shared memory pages that
+# can be used system wide. Hence, SHMALL should always be at least
+# ceil(shmmax/PAGE_SIZE).
+# To determine the current page size run the command "getconf PAGE_SIZE".
+# see https://www.kernel.org/doc/Documentation/sysctl/kernel.txt
 #
-# calculated by
-# (total (system+swap) memory size in KB * 1024 / pagesize)
-#
-# kernel.shmall is set to the maximum of the calculated value, SHMALL_MIN value
-# from this file and the actual system setting
+# kernel.shmall is set to the SHMALL value from this file
 #
 # SAP Note 941735, HANA Administration Guide
 # 
-SHMALL_MIN=1152921504606846720
+SHMALL=1152921504606846720
 
 # kernel.shmmax
-# The lower tuning limit of the maximum amount of a single shared memory
-# segment in Bytes.
-# This number should not be less than 20 GB (SAP Note 941735).
+# This value can be set the run time limit on the maximum shared memory
+# segment size that can be created.
+# see https://www.kernel.org/doc/Documentation/sysctl/kernel.txt
 #
-# calculated by (total (system+swap) memory size in KB * 1024)
+# kernel.shmmax is set to the SHMMAX value from this file
 #
-# kernel.shmmax is set to the maximum of the calculated value, SHMMAX_MIN value
-# from this file and the actual system setting
-#
-# SHMMAX_MIN set to ULONG_MAX (18446744073709551615)
+# SHMMAX set to ULONG_MAX (18446744073709551615)
 #
 # SAP Note 941735, HANA Administration Guide
 #
-SHMMAX_MIN=18446744073709551615
+SHMMAX=18446744073709551615
 
 # kernel.sem
 # The next 4 values define the Semaphore limits
-# kernel.sem = max(system, SEMMSL_MIN) max(system, SEMMNS_MIN) max(system, SEMOPM_MIN) max(system, SEMMNI_MIN)
+# kernel.sem = SEMMSL SEMMNS SEMOPM SEMMNI
 #
 # SAP Note 1275776
 #
@@ -68,23 +51,23 @@ SHMMAX_MIN=18446744073709551615
 # The lower tuning limit of the maximum number of semaphores per semaphore set.
 # Set to 32000
 #
-SEMMSL_MIN=32000
+SEMMSL=32000
 
 # The lower tuning limit of the maximum total number of semaphores.
 # Set to 1024000000
 #
-SEMMNS_MIN=1024000000
+SEMMNS=1024000000
 
 # The lower tuning limit of the maximum number of semaphore operations that
 # can be performed per "semop" system call.
 # Set to 500
 #
-SEMOPM_MIN=500
+SEMOPM=500
 
 # The lower tuning limit of maxium total number of semaphore sets.
 # Set to 32000
 #
-SEMMNI_MIN=32000
+SEMMNI=32000
 
 # /etc/security/limits.conf
 ## Type:        regexp(^@(sapsys|sdba|dba)[[:space:]]+(-|hard|soft)[[:space:]]+(nofile)[[:space:]]+[[:digit:]]+)
@@ -107,27 +90,25 @@ LIMIT_6="@dba hard nofile 65536"
 # Memory map areas are used as a side-effect of calling malloc, directly by
 # mmap and mprotect, and also when loading shared libraries.
 #
-# vm.max_map_count is set to the maximum of MAX_MAP_COUNT_DEF value from
-# this file and the actual system setting
+# vm.max_map_count is set to the MAX_MAP_COUNT value from this file
 #
 # vm.max_map_count should be set to MAX_INT (2147483647)
 #
 # SAP Note 1275776, 900929, HANA Administration Guide
 #
-MAX_MAP_COUNT_DEF=2147483647
+MAX_MAP_COUNT=2147483647
 
 # kernel.shmmni
 # The value is the maximum number of shared memory identifies available in the
 # system.
 #
-# kernel.shmmni is set to the maximum of SHMMNI_DEF value from this file and
-# the actual system setting
+# kernel.shmmni is set to the SHMMNI value from this file
 #
-# kernel.shmmni  should be set to 32768 (see bsc#874778)
+# kernel.shmmni should be set to 32768 (see bsc#874778)
 #
 # SAP Note 2534844, bsc#874778, HANA Administration Guide
 #
-SHMMNI_DEF=32768
+SHMMNI=32768
 
 # vm.dirty_bytes (indirect vm.dirty_ratio)
 # Contains the amount of dirty memory at which a process generating disk writes
@@ -142,14 +123,13 @@ SHMMNI_DEF=32768
 # value lower than this limit will be ignored and the old configuration will be
 # retained.
 #
-# vm.dirty_bytes is set to the maximum of DIRTY_BYTES_DEF value from this file
-# and the actual system setting
+# vm.dirty_bytes is set to the DIRTY_BYTES value from this file
 #
-# vm.dirty_bytes  should be set to 629145600 (see TID_7010287)
+# vm.dirty_bytes should be set to 629145600 (see TID_7010287)
 #
 # TID_7010287
 #
-DIRTY_BYTES_DEF=629145600
+DIRTY_BYTES=629145600
 
 # vm.dirty_background_bytes (indirect vm.dirty_background_ratio)
 # Contains the amount of dirty memory at which the background kernel
@@ -161,14 +141,13 @@ DIRTY_BYTES_DEF=629145600
 # Note: when changing the tuned profile or switching off tuned, both values
 # will be set back to their previous settings.
 #
-# vm.dirty_background_bytes is set to the maximum of DIRTY_BG_BYTES_DEF value
-# from this file and the actual system setting
+# vm.dirty_background_bytes is set to the DIRTY_BG_BYTES value from this file
 #
-# vm.dirty_background_bytes  should be set to 314572800 (see TID_7010287)
+# vm.dirty_background_bytes should be set to 314572800 (see TID_7010287)
 #
 # TID_7010287
 #
-DIRTY_BG_BYTES_DEF=314572800
+DIRTY_BG_BYTES=314572800
 
 # net.ipv4.tcp_slow_start_after_idle
 # If enabled (=1), provide RFC 2861 behavior and time out the congestion
