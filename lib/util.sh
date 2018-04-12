@@ -68,12 +68,36 @@ increase_val() {
 chk_conf_val() {
     declare -r val2chk=$1
     declare -r def_val=$2
-    eval val2set=\$$val2chk
+    val2set=${!val2chk}
     if [ -z "$val2set" ]; then
         log "ATTENTION: $val2chk not set in sysconfig file."
         log "Setting default value '$def_val' instead"
 	echo -n "$def_val"
     else
 	echo -n "$val2set"
+    fi
+}
+
+# check, if a value is defined in the (sourced) sysconfig file
+# if not, log a warning and leave the current system value unchanged
+# otherwise set the value from sysconfig file as the new system value
+chk_and_set_conf_val() { 
+    declare -r val2chk=$1
+    declare -r param=$2 
+    val2set=${!val2chk}
+    current_val=$(sysctl -n $param)
+    if [ -z "$val2set" ]; then
+        log "ATTENTION: $val2chk not set in sysconfig file."
+        log "Leaving $param unchanged at $current_val"
+    else
+        if [ $(math_test "$current_val < $val2set") ]; then
+            log "Increasing $param from $current_val to $val2set"
+            sysctl -w "$param=$val2set"
+        elif [ $(math_test "$current_val > $val2set") ]; then
+            log "Decreasing $param from $current_val to $val2set"
+            sysctl -w "$param=$val2set"
+        else
+            log "Leaving $param unchanged at $current_val"
+        fi
     fi
 }

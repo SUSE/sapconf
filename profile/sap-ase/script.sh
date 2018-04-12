@@ -18,7 +18,8 @@ start() {
 
     # SAP Note 2534844, bsc#874778
     save_value kernel.shmmni $(sysctl -n kernel.shmmni)
-    increase_sysctl kernel.shmmni 32768
+    SHMMNI=32768
+    chk_and_set_conf_val SHMMNI kernel.shmmni
 
     # SAP note 1680803 - best practice
     source /etc/sysconfig/sapnote-1680803
@@ -73,23 +74,30 @@ start() {
 
     # 1680803
     save_value fs.aio-max-nr $(sysctl -n fs.aio-max-nr)
-    increase_sysctl fs.aio-max-nr 1048576
+    AIOMAXNR=1048576
+    chk_and_set_conf_val AIOMAXNR fs.aio-max-nr
     save_value fs.file-max $(sysctl -n fs.file-max)
-    increase_sysctl fs.file-max 6291456
+    FILEMAX=6291456
+    chk_and_set_conf_val FILEMAX fs.file-max
 
     # Increase Linux autotuning TCP buffer limits
     # Set max to 16MB (16777216) for 1GE and 32M (33554432) or 54M (56623104) for 10GE
     # Don't set tcp_mem itself! Let the kernel scale it based on RAM.
     save_value net.core.rmem_max $(sysctl -n net.core.rmem_max)
-    increase_sysctl net.core.rmem_max 6291456
+    RMEMMAX=6291456
+    chk_and_set_conf_val RMEMMAX net.core.rmem_max
     save_value net.core.wmem_max $(sysctl -n net.core.wmem_max)
-    increase_sysctl net.core.wmem_max 6291456
+    WMEMMAX=6291456
+    chk_and_set_conf_val WMEMMAX net.core.wmem_max
     save_value net.core.rmem_default $(sysctl -n net.core.rmem_default)
-    increase_sysctl net.core.rmem_default 6291456
+    RMEMDEF=6291456
+    chk_and_set_conf_val RMEMDEF net.core.rmem_default
     save_value net.core.wmem_default $(sysctl -n net.core.wmem_default)
-    increase_sysctl net.core.wmem_default 6291456
+    WMEMDEF=6291456
+    chk_and_set_conf_val WMEMDEF net.core.wmem_default
     save_value net.core.netdev_max_backlog $(sysctl -n net.core.netdev_max_backlog)
-    increase_sysctl net.core.netdev_max_backlog 30000
+    NETDEVMAXBACKLOG=30000
+    chk_and_set_conf_val NETDEVMAXBACKLOG net.core.netdev_max_backlog
 
     # If the server is a heavily used application server, e.g. a Database, it would
     # benefit significantly by using Huge Pages.
@@ -100,7 +108,8 @@ start() {
     # Huge Pages would result in wastage of memory as it cannot be used any further
     # by the OS.
     save_value vm.nr_hugepages $(sysctl -n vm.nr_hugepages)
-    increase_sysctl vm.nr_hugepages 128
+    NRHP=128
+    chk_and_set_conf_val NRHP vm.nr_hugepages
 
     # The following parameters were specified in tuned.conf before 2017-07-25, but are removed from tuned.conf
     # because they are redundant or no formula exists to calculate them automatically:

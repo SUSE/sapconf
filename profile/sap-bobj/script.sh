@@ -15,10 +15,12 @@ start() {
     tune_uuidd_socket
 
     save_value kernel.msgmni $(sysctl -n kernel.msgmni)
-    increase_sysctl "kernel.msgmni" 1024
+    MSGMNI=1024
+    chk_and_set_conf_val MSGMNI kernel.msgmni
 
     save_value kernel.shmmax $(sysctl -n kernel.shmmax)
-    increase_sysctl "kernel.shmmax" 18446744073709551615
+    SHMMAX=18446744073709551615
+    chk_and_set_conf_val SHMMAX kernel.shmmax
 
     log "--- Finished application of BOBJ tuning techniques"
     return 0

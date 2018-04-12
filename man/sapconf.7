@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "March 2018" "util-linux" "System Administration"
+.TH sapconf 8 "April 2018" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -29,9 +29,7 @@ Beside the customization in \fI/etc/tuned\fP the main customization can be done 
 .br
 All parameters to be set by sapconf are read from this file. 
 .br
-But be in mind: Higher system value will \fBever\fP remain unchanged. sapconf will never reduce any setting.
-.br
-sapconf will respect higher values set by the system or by the administrator using sysctl configuration files. Values set on the fly with sysctl command will respect too, but do not survive a system reboot.
+Be in mind: Higher or lower system values set by the system, the SAP installer or by the administrator using sysctl command or sysctl configuration files will be overwritten by sapconf, if they are part of the sapconf sysconfig file.
 .PP
 The process is splitted in 2 scripts. The \fIcommon.sh\fP is inherited by all profiles and \fI<profile>/script.sh\fP will do the whole tuning for the selected profile.
 .PP
@@ -62,16 +60,16 @@ systemctl start sapconf.service
 At the moment we're providing the following pre\-defined profiles:
 .TP
 .BI "sap\-netweaver"
-Tuning profile for SAP Netweaver. It is the default profile. If the tune daemon does not have any profile active, \fBsapconf(8)\fR will activiate SAP Netweaver tuning profile during start.
+Tuning profile for SAP NetWeaver. It is the default profile. If the tune daemon does not have any profile active, \fBsapconf(8)\fR will activiate SAP NetWeaver tuning profile during start.
 See the man page \fBtuned-profiles-sap-netweaver(7)\fR for details.
 .br
-To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and Netweaver workloads. That means the use of the same tuned.conf and script.sh file for both profiles
+To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and NetWeaver workloads. That means the use of the same tuned.conf and script.sh file for both profiles
 .PP
 .TP
 .BI "sap\-hana"
 Tuning profile for SAP HANA. See the man page \fBtuned-profiles-sap-hana(7)\fR for details.
 .br
-To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and Netweaver workloads. That means the use of the same tuned.conf and script.sh file for both profiles
+To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and NetWeaver workloads. That means the use of the same tuned.conf and script.sh file for both profiles
 .PP
 .TP
 .BI "sap\-ase"
@@ -143,7 +141,7 @@ Here you can find all parameters, wich are affected by sapconf. The actual setti
 .br
 If you change parameter values please don't forget to reload sapconf service to get the changes take effect.
 .PP
-The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. If a newer configuration file will be delivered, this file will be placed as /etc/sysconfig/sapconf.rpmnew. Please make sure that you merge these two files before you reload the sapconf service.
+The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. In some cases the old configuration file is preserved as /etc/sysconfig/sapconf.rpmsave and the new sapconf sysconfig file is copied to /etc/sysconfig/sapconf. Please make sure that you merge needed changes from this file to the new /etc/sysconfig/sapconf file before you restart the sapconf service.
 .RE
 .PP
 \fI/usr/lib/tuned/sap-<profile>/tuned.conf\fR

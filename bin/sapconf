@@ -19,10 +19,10 @@
 #
 
 # /usr/sbin/sapconf traditionally performed automatic system tuning for SAP
-# Netweaver products.
+# NetWeaver products.
 # During the course of SLES 12 SP1 development, the system tuning
 # implementation is moved entirely into tune daemon profiles.
-# In additional to support SAP Netweaver tuning, sapconf is extended to be
+# In additional to support SAP NetWeaver tuning, sapconf is extended to be
 # also able to activate HANA tuning profile via the tune daemon.
 
 echo 'Warning: sapconf is deprecated. Please use system tuning daemon (tuned) instead.'
@@ -59,7 +59,7 @@ case "$1" in
 
   netweaver)
     # This is a new option, an extension to the traditional sapconf.
-    # It activates Netweaver tuning profile via the tune daemon.
+    # It activates NetWeaver tuning profile via the tune daemon.
     echo 'Forwarding action to tuned-adm.'
     tuned-adm profile sap-netweaver &> /dev/null
     if ! systemctl status tuned &> /dev/null; then
