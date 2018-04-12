@@ -2,6 +2,10 @@
 ## Description: Limits for system tuning profiles of sapconf
 ## ServiceRestart: sapconf
 ##
+## This file includes parameters recommended by SAP
+## Be in mind: If you edit or remove values from this file, sapconf will no 
+## long behave as designed to or monitor these removed parameters
+##
 ## This file is sourced in the common (lib/common.sh) and profile special
 ## scripts (sapconf/script.sh) of the tuned integration of sapconf.
 
