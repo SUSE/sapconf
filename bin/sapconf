@@ -43,7 +43,9 @@ case "$1" in
     # bsc#1026862
     #if [[ $(cat /etc/tuned/active_profile) != sap* ]]; then
     if [[ $(cat /etc/tuned/active_profile) == "" ]]; then
-      tuned-adm profile sap-netweaver &> /dev/null
+      profile=$(cat /var/lib/sapconf/last_profile 2> /dev/null)
+      profile=${profile:-sap-netweaver}
+      tuned-adm profile $profile &> /dev/null
     fi
     if ! systemctl status tuned &> /dev/null; then
       systemctl start tuned
@@ -109,6 +111,7 @@ case "$1" in
     # stop tuned and remove sapconf profile from active tuned profil
     if [[ $(cat /etc/tuned/active_profile) == sap-* ]]; then
         /usr/bin/systemctl stop tuned >/dev/null 2>&1
+        cat /etc/tuned/active_profile > /var/lib/sapconf/last_profile
         > /etc/tuned/active_profile
         systemctl status tuned &> /dev/null && exit 1
     fi

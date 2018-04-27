@@ -60,7 +60,7 @@ systemctl start sapconf.service
 At the moment we're providing the following pre\-defined profiles:
 .TP
 .BI "sap\-netweaver"
-Tuning profile for SAP NetWeaver. It is the default profile. If the tune daemon does not have any profile active, \fBsapconf(8)\fR will activiate SAP NetWeaver tuning profile during start.
+Tuning profile for SAP NetWeaver. It is the default profile. If the tune daemon does not have any profile active and there is no information about the last used sapconf profile available in \fI/var/lib/sapconf/last_profile\fR, \fBsapconf(8)\fR will activiate SAP NetWeaver tuning profile during start.
 See the man page \fBtuned-profiles-sap-netweaver(7)\fR for details.
 .br
 To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and NetWeaver workloads. That means the use of the same tuned.conf and script.sh file for both profiles
@@ -151,6 +151,11 @@ profile special configuration file
 A description of the used values can be found at the end of the central configuration file \fI/etc/sysconfig/sapconf\fR
 .br
 The profiles are stored in subdirectories below \fI/usr/lib/tuned\fP. If you need to customize the profiles, you can copy them to \fI/etc/tuned\fP and modify them as you need. When loading profiles with the same name, the /etc/tuned takes precedence. In such case you will not lose your customized profiles between tuned updates.
+.RE
+.PP
+\fI/var/lib/sapconf/last_profile\fR
+.RS 4
+contains the last used sapconf profile. The file will be written during stop of the sapconf service and the content will be used during start of the sapconf service.
 .RE
 .PP
 \fI/var/log/sapconf\.log\fR
