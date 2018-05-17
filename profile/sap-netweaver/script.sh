@@ -1,4 +1,6 @@
 #!/bin/bash
+# shellcheck disable=SC1091,SC2068
+
 # Optimise kernel parameters for running SAP HANA and HANA based products (such as Business One).
 # The calculations are based on:
 # - Parameters tuned by SAP installation wizard and configure_HANA.sh.
@@ -30,45 +32,58 @@ start() {
         exit 1
     fi
 
+    # paranoia: should not happen, because post script of package installation
+    # should rewrite variable names. But....
+    for par in SHMMNI_DEF DIRTY_BYTES_DEF DIRTY_BG_BYTES_DEF; do
+        npar=${par%_*}
+        if [ -n "${!par}" ] && [ -z "${!npar}" ]; then
+            # the only interesting case:
+            # the old variable name is declared in the sysconfig file, but
+            # NOT the new variable name
+            # So set the new variable name  with the value of the old one
+            declare $npar=${!par}
+        fi
+    done
+
     # SAP Note 2534844, bsc#874778
-    save_value kernel.shmmni $(sysctl -n kernel.shmmni)
+    save_value kernel.shmmni "$(sysctl -n kernel.shmmni)"
     chk_and_set_conf_val SHMMNI kernel.shmmni
 
     # TID_7010287
-    save_value vm.dirty_bytes $(sysctl -n vm.dirty_bytes)
-    save_value vm.dirty_ratio $(sysctl -n vm.dirty_ratio) # value needed for revert of vm.dirty_bytes
+    save_value vm.dirty_bytes "$(sysctl -n vm.dirty_bytes)"
+    save_value vm.dirty_ratio "$(sysctl -n vm.dirty_ratio)" # value needed for revert of vm.dirty_bytes
     chk_and_set_conf_val DIRTY_BYTES vm.dirty_bytes
-    save_value vm.dirty_background_bytes $(sysctl -n vm.dirty_background_bytes)
-    save_value vm.dirty_background_ratio $(sysctl -n vm.dirty_background_ratio) # value needed for revert of vm.dirty_background_bytes
+    save_value vm.dirty_background_bytes "$(sysctl -n vm.dirty_background_bytes)"
+    save_value vm.dirty_background_ratio "$(sysctl -n vm.dirty_background_ratio)" # value needed for revert of vm.dirty_background_bytes
     chk_and_set_conf_val DIRTY_BG_BYTES vm.dirty_background_bytes
 
     # SAP note
     cur_val=$(sysctl -n net.ipv4.tcp_slow_start_after_idle)
-    TCP_SLOW_START=$(chk_conf_val TCP_SLOW_START $cur_val)
+    TCP_SLOW_START=$(chk_conf_val TCP_SLOW_START "$cur_val")
     if [ "$cur_val" != "$TCP_SLOW_START" ]; then
-        save_value net.ipv4.tcp_slow_start_after_idle $cur_val
+        save_value net.ipv4.tcp_slow_start_after_idle "$cur_val"
         log "Change net.ipv4.tcp_slow_start_after_idle from $cur_val to $TCP_SLOW_START"
-        sysctl -w net.ipv4.tcp_slow_start_after_idle=$TCP_SLOW_START
+        sysctl -w net.ipv4.tcp_slow_start_after_idle="$TCP_SLOW_START"
     else
         log "Leaving net.ipv4.tcp_slow_start_after_idle unchanged at $cur_val"
     fi
 
     # SAP note 2205917 - KSM and AutoNUMA both should be off
     cur_val=$(cat /sys/kernel/mm/ksm/run)
-    KSM=$(chk_conf_val KSM $cur_val)
+    KSM=$(chk_conf_val KSM "$cur_val")
     if [ "$cur_val" != "$KSM" ]; then
         save_value ksm "$cur_val"
         log "Change ksm from $cur_val to $KSM"
-        echo $KSM > /sys/kernel/mm/ksm/run
+        echo "$KSM" > /sys/kernel/mm/ksm/run
     else
         log "Leaving ksm unchanged at $cur_val"
     fi
     cur_val=$(cat /proc/sys/kernel/numa_balancing)
-    NUMA_BALANCING=$(chk_conf_val NUMA_BALANCING $cur_val)
+    NUMA_BALANCING=$(chk_conf_val NUMA_BALANCING "$cur_val")
     if [ "$cur_val" != "$NUMA_BALANCING" ]; then
         save_value numa_balancing "$cur_val"
         log "Change numa_balancing from $cur_val to $NUMA_BALANCING"
-        echo $NUMA_BALANCING > /proc/sys/kernel/numa_balancing
+        echo "$NUMA_BALANCING" > /proc/sys/kernel/numa_balancing
     else
         log "Leaving numa_balancing unchanged at $cur_val"
     fi
@@ -76,12 +91,12 @@ start() {
     # SAP note 2205917 - Transparent Hugepage should be never
     # SAP note 2055470 - Ignore transparent huge pages and c-state information given in the first two notes above. These technologies are different on IBM Power Servers. (Version 68 from Oct 11, 2017)
     if [[ $(uname -m) == x86_64 ]]; then
-        cur_val=$(sed "s%.*\[\(.*\)\].*%\1%" /sys/kernel/mm/transparent_hugepage/enabled)
-        THP=$(chk_conf_val THP $cur_val)
+        cur_val=$(sed 's%.*\[\(.*\)\].*%\1%' /sys/kernel/mm/transparent_hugepage/enabled)
+        THP=$(chk_conf_val THP "$cur_val")
         if [ "$cur_val" != "$THP" ]; then
             save_value thp "$cur_val"
             log "Change transparent_hugepage from $cur_val to $THP"
-            echo $THP > /sys/kernel/mm/transparent_hugepage/enabled
+            echo "$THP" > /sys/kernel/mm/transparent_hugepage/enabled
         else
             log "Leaving transparent_hugepage unchanged at $cur_val"
         fi

@@ -1,4 +1,6 @@
 #!/bin/bash
+# shellcheck disable=SC2188
+
 #
 # /usr/sbin/sapconf
 #
@@ -45,7 +47,7 @@ case "$1" in
     if [[ $(cat /etc/tuned/active_profile) == "" ]]; then
       profile=$(cat /var/lib/sapconf/last_profile 2> /dev/null)
       profile=${profile:-sap-netweaver}
-      tuned-adm profile $profile &> /dev/null
+      tuned-adm profile "$profile" &> /dev/null
     fi
     if ! systemctl status tuned &> /dev/null; then
       systemctl start tuned

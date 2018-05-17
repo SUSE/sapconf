@@ -1,4 +1,6 @@
 #!/bin/bash
+# shellcheck disable=SC1091,SC2068
+
 # Optimise kernel parameters for running SAP ASE.
 # The calculations are based on:
 # - Various SAP notes.
@@ -16,21 +18,22 @@ start() {
     # SAP note 1984787 - Installation notes
     tune_uuidd_socket
 
-    # SAP Note 2534844, bsc#874778
-    save_value kernel.shmmni $(sysctl -n kernel.shmmni)
-    SHMMNI=32768
-    chk_and_set_conf_val SHMMNI kernel.shmmni
-
     # SAP note 1680803 - best practice
     source /etc/sysconfig/sapnote-1680803
+
+    # SAP Note 2534844, bsc#874778
+    save_value kernel.shmmni "$(sysctl -n kernel.shmmni)"
+    chk_and_set_conf_val SHMMNI kernel.shmmni
+
     # set number of requests for block devices (sdX)
-    for _dev in `ls -d /sys/block/sd*`; do
+    for _dev in /sys/block/sd*; do
+        [[ -e $_dev ]] || break  # if no sd block device exist
         _dev_save=${_dev//\//_}
-        _nrreq=`cat $_dev/queue/nr_requests`
-        if [ -n "$_nrreq" -a -n "$NRREQ" ]; then
-            if [ $_nrreq -ne $NRREQ ]; then
+        _nrreq=$(cat "$_dev"/queue/nr_requests)
+        if [ -n "$_nrreq" ] && [ -n "$NRREQ" ]; then
+            if [ "$_nrreq" -ne "$NRREQ" ]; then
                 save_value "$_dev_save" "$_nrreq"
-		echo $NRREQ > $_dev/queue/nr_requests
+		echo "$NRREQ" > "$_dev"/queue/nr_requests
             fi
         fi
     done
@@ -46,7 +49,7 @@ start() {
         limits_line=$(grep -E "^${ulimit_group}[[:space:]]+${ulimit_type}[[:space:]]+memlock+" /etc/security/limits.conf)
         save_limit=0
         if [ "$limits_line" ]; then
-            save_limit=$(echo ${limits_line##*[[:space:]]})
+            save_limit=$(${limits_line##*[[:space:]]})
             sed -i "/$limits_line/d" /etc/security/limits.conf
         fi
         echo "$sysconf_line" >> /etc/security/limits.conf
@@ -55,48 +58,29 @@ start() {
 
 
     # 1410736
-    cur_val=$(sysctl -n net.ipv4.tcp_keepalive_time)
-    if [ "$cur_val" != "300" ]; then
-        save_value net.ipv4.tcp_keepalive_time $(sysctl -n net.ipv4.tcp_keepalive_time)
-        log "Change net.ipv4.tcp_keepalive_time from $cur_val to 300"
-        sysctl -w net.ipv4.tcp_keepalive_time=300
-    else
-        log "net.ipv4.tcp_keepalive_time unchanged at $cur_val"
-    fi
-    cur_val=$(sysctl -n net.ipv4.tcp_keepalive_intvl)
-    if [ "$cur_val" != "300" ]; then
-        save_value net.ipv4.tcp_keepalive_intvl $(sysctl -n net.ipv4.tcp_keepalive_intvl)
-        log "Change net.ipv4.tcp_keepalive_intvl from $cur_val to 300"
-        sysctl -w net.ipv4.tcp_keepalive_intvl=300
-    else
-        log "net.ipv4.tcp_keepalive_intvl unchanged at $cur_val"
-    fi
+    save_value net.ipv4.tcp_keepalive_time "$(sysctl -n net.ipv4.tcp_keepalive_time)"
+    chk_and_set_conf_val KEEPALIVETIME net.ipv4.tcp_keepalive_time
+    save_value net.ipv4.tcp_keepalive_intvl "$(sysctl -n net.ipv4.tcp_keepalive_intvl)"
+    chk_and_set_conf_val KEEPALIVEINTVL net.ipv4.tcp_keepalive_intvl
 
     # 1680803
-    save_value fs.aio-max-nr $(sysctl -n fs.aio-max-nr)
-    AIOMAXNR=1048576
+    save_value fs.aio-max-nr "$(sysctl -n fs.aio-max-nr)"
     chk_and_set_conf_val AIOMAXNR fs.aio-max-nr
-    save_value fs.file-max $(sysctl -n fs.file-max)
-    FILEMAX=6291456
+    save_value fs.file-max "$(sysctl -n fs.file-max)"
     chk_and_set_conf_val FILEMAX fs.file-max
 
     # Increase Linux autotuning TCP buffer limits
     # Set max to 16MB (16777216) for 1GE and 32M (33554432) or 54M (56623104) for 10GE
     # Don't set tcp_mem itself! Let the kernel scale it based on RAM.
-    save_value net.core.rmem_max $(sysctl -n net.core.rmem_max)
-    RMEMMAX=6291456
+    save_value net.core.rmem_max "$(sysctl -n net.core.rmem_max)"
     chk_and_set_conf_val RMEMMAX net.core.rmem_max
-    save_value net.core.wmem_max $(sysctl -n net.core.wmem_max)
-    WMEMMAX=6291456
+    save_value net.core.wmem_max "$(sysctl -n net.core.wmem_max)"
     chk_and_set_conf_val WMEMMAX net.core.wmem_max
-    save_value net.core.rmem_default $(sysctl -n net.core.rmem_default)
-    RMEMDEF=6291456
+    save_value net.core.rmem_default "$(sysctl -n net.core.rmem_default)"
     chk_and_set_conf_val RMEMDEF net.core.rmem_default
-    save_value net.core.wmem_default $(sysctl -n net.core.wmem_default)
-    WMEMDEF=6291456
+    save_value net.core.wmem_default "$(sysctl -n net.core.wmem_default)"
     chk_and_set_conf_val WMEMDEF net.core.wmem_default
-    save_value net.core.netdev_max_backlog $(sysctl -n net.core.netdev_max_backlog)
-    NETDEVMAXBACKLOG=30000
+    save_value net.core.netdev_max_backlog "$(sysctl -n net.core.netdev_max_backlog)"
     chk_and_set_conf_val NETDEVMAXBACKLOG net.core.netdev_max_backlog
 
     # If the server is a heavily used application server, e.g. a Database, it would
@@ -107,9 +91,8 @@ start() {
     # Huge Pages. If the Applications do not support Huge Pages then configuring
     # Huge Pages would result in wastage of memory as it cannot be used any further
     # by the OS.
-    save_value vm.nr_hugepages $(sysctl -n vm.nr_hugepages)
-    NRHP=128
-    chk_and_set_conf_val NRHP vm.nr_hugepages
+    save_value vm.nr_hugepages "$(sysctl -n vm.nr_hugepages)"
+    chk_and_set_conf_val NUMBER_HUGEPAGES vm.nr_hugepages
 
     # The following parameters were specified in tuned.conf before 2017-07-25, but are removed from tuned.conf
     # because they are redundant or no formula exists to calculate them automatically:
@@ -156,10 +139,12 @@ stop() {
     [ "$val" ] && log "Restoring vm.nr_hugepages=$val" && sysctl -w "vm.nr_hugepages=$val"
 
     # Restore number of requests for block devices (sdX)
-    for _dev in `ls -d /sys/block/sd*`; do
+    #for _dev in `ls -d /sys/block/sd*`; do
+    for _dev in /sys/block/sd*; do
+        [[ -e $_dev ]] || break  # if no sd block device exist
         _dev_save=${_dev//\//_}
-        NRREQ=$(restore_value $_dev_save)
-        [ "$NRREQ" ] && echo $NRREQ > $_dev/queue/nr_requests
+        NRREQ=$(restore_value "$_dev_save")
+        [ "$NRREQ" ] && echo "$NRREQ" > "$_dev"/queue/nr_requests
     done
 
     # Restore memlock for user sybase

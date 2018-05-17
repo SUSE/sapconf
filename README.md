@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/SUSE/sapconf.svg?branch=sle-12)](https://travis-ci.org/SUSE/sapconf)
+
 # sapconf
 The utility adjusts operating system parameters, such as kernel tuning settings and resource limits, to allow running various SAP solutions at satisfactory performance.
 
