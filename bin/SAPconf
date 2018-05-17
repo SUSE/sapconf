@@ -19,4 +19,4 @@
 # Therefore, this program calls sapconf with action "start" to trigger
 # activation of SAP NetWeaver tuning profile.
 
-exec -a $0 /usr/sbin/sapconf start
+exec -a "$0" /usr/sbin/sapconf start

@@ -1,4 +1,6 @@
 #!/bin/bash
+# shellcheck disable=SC1091,SC2068
+
 # Optimise kernel parameters for running SAP BOBJ
 
 cd /usr/lib/sapconf || exit 1
@@ -14,11 +16,13 @@ start() {
     # SAP note 1984787 - Installation notes
     tune_uuidd_socket
 
-    save_value kernel.msgmni $(sysctl -n kernel.msgmni)
+    save_value kernel.msgmni "$(sysctl -n kernel.msgmni)"
+    # shellcheck disable=SC2034
     MSGMNI=1024
     chk_and_set_conf_val MSGMNI kernel.msgmni
 
-    save_value kernel.shmmax $(sysctl -n kernel.shmmax)
+    save_value kernel.shmmax "$(sysctl -n kernel.shmmax)"
+    # shellcheck disable=SC2034
     SHMMAX=18446744073709551615
     chk_and_set_conf_val SHMMAX kernel.shmmax
 
@@ -32,10 +36,10 @@ stop() {
     revert_page_cache_limit
     revert_uuidd_socket
 
-    msgmni=$(restore_value kernel.msgmni)
+    msgmni="$(restore_value kernel.msgmni)"
     [ "$msgmni" ] && log "Restoring kernel.msgmni=$msgmni" && sysctl -w "kernel.msgmni=$msgmni"
 
-    shmmax=$(restore_value kernel.shmmax)
+    shmmax="$(restore_value kernel.shmmax)"
     [ "$shmmax" ] && log "Restoring kernel.shmmax=$shmmax" && sysctl -w "kernel.shmmax=$shmmax"
 
     log "--- Finished reverting BOBJ tuned parameters"
