@@ -34,7 +34,6 @@ stop() {
     log "--- Going to revert BOBJ tuned parameters"
     revert_preparation
     revert_page_cache_limit
-    revert_uuidd_socket
 
     msgmni="$(restore_value kernel.msgmni)"
     [ "$msgmni" ] && log "Restoring kernel.msgmni=$msgmni" && sysctl -w "kernel.msgmni=$msgmni"

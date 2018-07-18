@@ -56,7 +56,6 @@ start() {
         save_value "memlock_$ulimit_type" "$save_limit"
     done
 
-
     # 1410736
     save_value net.ipv4.tcp_keepalive_time "$(sysctl -n net.ipv4.tcp_keepalive_time)"
     chk_and_set_conf_val KEEPALIVETIME net.ipv4.tcp_keepalive_time
@@ -83,24 +82,9 @@ start() {
     save_value net.core.netdev_max_backlog "$(sysctl -n net.core.netdev_max_backlog)"
     chk_and_set_conf_val NETDEVMAXBACKLOG net.core.netdev_max_backlog
 
-    # If the server is a heavily used application server, e.g. a Database, it would
-    # benefit significantly by using Huge Pages.
-    # The default size of Huge Page in SLES is 2 MB, enabling Huge Pages would aid
-    # in significant improvements for Memory Intensive Applications/Databases,
-    # HPC Machines, this configuration needs to be done if the Applications support
-    # Huge Pages. If the Applications do not support Huge Pages then configuring
-    # Huge Pages would result in wastage of memory as it cannot be used any further
-    # by the OS.
+    # Huge Pages - vm.nr_hugepages
     save_value vm.nr_hugepages "$(sysctl -n vm.nr_hugepages)"
     chk_and_set_conf_val NUMBER_HUGEPAGES vm.nr_hugepages
-
-    # The following parameters were specified in tuned.conf before 2017-07-25, but are removed from tuned.conf
-    # because they are redundant or no formula exists to calculate them automatically:
-    # vm.dirty_ratio = 10
-    # vm.dirty_background_ratio = 3
-    # kernel.sem = 1250 256000 100 8192
-    # kernel.sched_min_granularity_ns = 10000000
-    # kernel.sched_wakeup_granularity_ns = 15000000
 
     log "--- Finished application of ASE tuning techniques"
     return 0
@@ -110,7 +94,6 @@ stop() {
     log "--- Going to revert ASE tuned parameters"
     revert_preparation
     revert_page_cache_limit
-    revert_uuidd_socket
     revert_shmmni
 
     val=$(restore_value net.ipv4.tcp_keepalive_time)
@@ -122,7 +105,6 @@ stop() {
     [ "$val" ] && log "Restoring fs.aio-max-nr=$val" && sysctl -w "fs.aio-max-nr=$val"
     val=$(restore_value fs.file-max)
     [ "$val" ] && log "Restoring fs.file-max=$val" && sysctl -w "fs.file-max=$val"
-
 
     val=$(restore_value net.core.rmem_max)
     [ "$val" ] && log "Restoring net.core.rmem_max=$val" && sysctl -w "net.core.rmem_max=$val"

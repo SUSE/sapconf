@@ -4,7 +4,7 @@
 # Optimise kernel parameters for running SAP HANA and HANA based products (such as Business One).
 # The calculations are based on:
 # - Parameters tuned by SAP installation wizard and configure_HANA.sh.
-# - Various SAP notes.
+# - Various SAP Notes.
 # Authors:
 #   Angela Briel <abriel@suse.com>
 #   Howard Guo <hguo@suse.com>
@@ -17,9 +17,9 @@ start() {
     log "--- Going to apply SAP tuning techniques"
     # Common tuning techniques apply to HANA and NetWeaver
     tune_preparation
-    # SAP note 1557506 - Linux paging improvements
+    # SAP Note 1557506 - Linux paging improvements
     tune_page_cache_limit
-    # SAP note 1984787 - Installation notes
+    # SAP Note 1984787 - Installation notes
     tune_uuidd_socket
 
     # Read value requirements from sysconfig
@@ -45,11 +45,11 @@ start() {
         fi
     done
 
-    # SAP Note 2534844, bsc#874778
+    # SAP Note 2534844
     save_value kernel.shmmni "$(sysctl -n kernel.shmmni)"
     chk_and_set_conf_val SHMMNI kernel.shmmni
 
-    # TID_7010287
+    # SAP Note 1984787
     save_value vm.dirty_bytes "$(sysctl -n vm.dirty_bytes)"
     save_value vm.dirty_ratio "$(sysctl -n vm.dirty_ratio)" # value needed for revert of vm.dirty_bytes
     chk_and_set_conf_val DIRTY_BYTES vm.dirty_bytes
@@ -57,7 +57,7 @@ start() {
     save_value vm.dirty_background_ratio "$(sysctl -n vm.dirty_background_ratio)" # value needed for revert of vm.dirty_background_bytes
     chk_and_set_conf_val DIRTY_BG_BYTES vm.dirty_background_bytes
 
-    # SAP note
+    # SAP Note 2382421
     cur_val=$(sysctl -n net.ipv4.tcp_slow_start_after_idle)
     TCP_SLOW_START=$(chk_conf_val TCP_SLOW_START "$cur_val")
     if [ "$cur_val" != "$TCP_SLOW_START" ]; then
@@ -68,7 +68,7 @@ start() {
         log "Leaving net.ipv4.tcp_slow_start_after_idle unchanged at $cur_val"
     fi
 
-    # SAP note 2205917 - KSM and AutoNUMA both should be off
+    # SAP Note 2205917 - KSM and AutoNUMA both should be off
     cur_val=$(cat /sys/kernel/mm/ksm/run)
     KSM=$(chk_conf_val KSM "$cur_val")
     if [ "$cur_val" != "$KSM" ]; then
@@ -88,8 +88,8 @@ start() {
         log "Leaving numa_balancing unchanged at $cur_val"
     fi
 
-    # SAP note 2205917 - Transparent Hugepage should be never
-    # SAP note 2055470 - Ignore transparent huge pages and c-state information given in the first two notes above. These technologies are different on IBM Power Servers. (Version 68 from Oct 11, 2017)
+    # SAP Note 2205917 - Transparent Hugepage should be never
+    # SAP Note 2055470 - Ignore transparent huge pages and c-state information given in the first two notes above. These technologies are different on IBM Power Servers. (Version 68 from Oct 11, 2017)
     if [[ $(uname -m) == x86_64 ]]; then
         cur_val=$(sed 's%.*\[\(.*\)\].*%\1%' /sys/kernel/mm/transparent_hugepage/enabled)
         THP=$(chk_conf_val THP "$cur_val")
@@ -111,7 +111,6 @@ stop() {
 
     revert_preparation
     revert_page_cache_limit
-    revert_uuidd_socket
     #revert_shmmni
 
     # Restore kernel.shmmni, vm.dirty_bytes, vm.dirty_background_bytes, net.ipv4.tcp_slow_start_after_idle
