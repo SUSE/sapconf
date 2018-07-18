@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 5 "April 2018" "sapconf configuration file"
+.TH sapconf 5 "June 2018" "sapconf configuration file"
 .SH NAME
 sapconf \- central configuration file of sapconf
 
@@ -90,7 +90,7 @@ The lower tuning limit of maxium total number of semaphore sets.
 .PP
 Semaphore limits, set in the common part (tune_preparation) of the scripting
 .br
-SAP Note 1275776
+SAP Note 1984787
 .RE
 .PP
 \fBLIMIT_1="@sapsys soft nofile 65536"\fP
@@ -128,7 +128,7 @@ MAX_MAP_COUNT set to MAX_INT (2147483647)
 .RS 4
 Memory Management setting in the common part (tune_preparation) of the scripting
 .br
-SAP Note 1275776, 900929, HANA Administration Guide
+SAP Note 1980196, 900929, HANA Administration Guide
 .RE
 .PP
 .TP 4
@@ -140,7 +140,7 @@ The value is the maximum number of shared memory identifies available in the sys
 .RS 4
 Linux kernel setting, set in the profile specific part of the scripting
 .br
-SAP Note 2534844, bsc#874778, HANA Administration Guide
+SAP Note 2534844, HANA Administration Guide
 .RE
 .PP
 .TP 4
@@ -158,7 +158,7 @@ Note: the minimum value allowed for dirty_bytes is two pages (in bytes); any val
 .RS 4
 Memory Management setting in the profile specific part of the scripting
 .br
-TID_7010287
+SAP Note 1984787, SAP Note 1557506
 .RE
 .PP
 .TP 4
@@ -174,7 +174,7 @@ Note: when changing the tuned profile or switching off tuned, both values will b
 .RS 4
 Memory Management setting in the profile specific part of the scripting
 .br
-TID_7010287
+SAP Note 1984787, SAP Note 1557506
 .RE
 .PP
 .TP 4
@@ -186,7 +186,7 @@ This value is important for large ScaleOut HANA clusters and HANA2 in general. S
 .RS 4
 IO related setting \fBnet.ipv4.tcp_slow_start_after_idle\fP during the profile specific part of the scripting
 .br
-SAP Note 
+SAP Note 2382421
 .RE
 .PP
 .TP 4
@@ -335,7 +335,7 @@ The value is commented out by default
 .RS 4
 Set during start, stop or profile change of tuned.
 .br
-SAP Note
+SAP Note 2205917
 .RE
 .PP
 .TP 4
@@ -351,7 +351,7 @@ When set, all block devices on the system will be switched to the chosen schedul
 .RS 4
 Set during start, stop or profile change of tuned.
 .br
-SAP Note
+SAP Note 1984787
 .RE
 .PP
 .SH DESCRIPTION OF PART 3
@@ -362,7 +362,7 @@ These values are profile independent. They describe requirements and settings du
 .BI sysstat
 Package requirement. The service is started after installation of the package.
 .br
-SAP Note 1310037
+SAP Note 1984787
 .PP
 .TP 4
 .BI uuidd.socket

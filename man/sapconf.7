@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "April 2018" "util-linux" "System Administration"
+.TH sapconf 8 "June 2018" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -80,7 +80,7 @@ Profile for SAP ASE (Sybase) tuning. See the man page \fBtuned-profiles-sap-ase(
 Profile for SAP Business OBJects (BOBJ) tuning. See the man page \fBtuned-profiles-sap-bobj(7)\fR for details.
 
 .SH "SAP NOTES"
-All settings are done according to SAP note number 900929, 941735, 1275776, 1310037, 1557506, 1771258, 1984787, 2031375, 2055470, 2131662, 2205917, 2534844 and TID_7010287
+All settings are done according to SAP note number 900929, 941735, 1557506, 1771258, 1980196, 1984787, 2031375, 2055470, 2131662, 2205917, 2382421 and 2534844
 .br
 See the comments in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR or \fBsapconf(5)\fP for details.
 
@@ -88,7 +88,7 @@ See the comments in the central sapconf configuration file \fI/etc/sysconfig/sap
 The following package requirements exist for the sapconf package:
 .TP 4
 .BI "sysstat" 
-service is started after package installation (see SAP Note 1310037)
+service is started after package installation (see SAP Note 1984787)
 .PP
 .TP 4
 .BI "uuidd.socket"

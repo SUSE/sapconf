@@ -49,7 +49,7 @@ SHMMAX=18446744073709551615
 # The next 4 values define the Semaphore limits
 # kernel.sem = SEMMSL SEMMNS SEMOPM SEMMNI
 #
-# SAP Note 1275776
+# SAP Note 1984787
 #
 
 # The lower tuning limit of the maximum number of semaphores per semaphore set.
@@ -98,7 +98,7 @@ LIMIT_6="@dba hard nofile 65536"
 #
 # vm.max_map_count should be set to MAX_INT (2147483647)
 #
-# SAP Note 1275776, 900929, HANA Administration Guide
+# SAP Note 1980196, 900929, HANA Administration Guide
 #
 MAX_MAP_COUNT=2147483647
 
@@ -108,9 +108,9 @@ MAX_MAP_COUNT=2147483647
 #
 # kernel.shmmni is set to the SHMMNI value from this file
 #
-# kernel.shmmni should be set to 32768 (see bsc#874778)
+# kernel.shmmni should be set to 32768
 #
-# SAP Note 2534844, bsc#874778, HANA Administration Guide
+# SAP Note 2534844, HANA Administration Guide
 #
 SHMMNI=32768
 
@@ -131,7 +131,7 @@ SHMMNI=32768
 #
 # vm.dirty_bytes should be set to 629145600 (see TID_7010287)
 #
-# TID_7010287
+# SAP Note 1984787, SAP Note 1557506
 #
 DIRTY_BYTES=629145600
 
@@ -149,7 +149,7 @@ DIRTY_BYTES=629145600
 #
 # vm.dirty_background_bytes should be set to 314572800 (see TID_7010287)
 #
-# TID_7010287
+# SAP Note 1984787, SAP Note 1557506
 #
 DIRTY_BG_BYTES=314572800
 
@@ -162,7 +162,8 @@ DIRTY_BG_BYTES=314572800
 # This value is important for large ScaleOut HANA clusters and HANA2 in general.
 # So disable TCP slow start on idle connections
 # set net.ipv4.tcp_slow_start_after_idle=0
-# SAP Note
+#
+# SAP Note 2382421
 #
 TCP_SLOW_START=0
 
@@ -240,7 +241,7 @@ ENABLE_PAGECACHE_LIMIT="no"
 # SAP Note 1557506
 #
 # Please uncomment the following line and set your preferred value
-#PAGECACHE_LIMIT_MB=""
+#PAGECACHE_LIMIT_MB = ""
 
 # vm.pagecache_limit_ignore_dirty
 # Whether or not to ignore dirty memory when enforcing the pagecache limit.
@@ -254,7 +255,7 @@ ENABLE_PAGECACHE_LIMIT="no"
 # SAP Note 1557506
 #
 # Please uncomment the following line and set your preferred value
-#PAGECACHE_LIMIT_IGNORE_DIRTY=""
+#PAGECACHE_LIMIT_IGNORE_DIRTY = ""
 
 
 ###############################################################################
@@ -330,7 +331,7 @@ ENABLE_PAGECACHE_LIMIT="no"
 #
 # Value is commented out by default
 #
-# SAP Note
+# SAP Note 2205917
 #
 #min_perf_pct = 100
 
@@ -350,7 +351,7 @@ ENABLE_PAGECACHE_LIMIT="no"
 # When set, all block devices on the system will be switched to the chosen
 # scheduler.
 #
-# SAP Note
+# SAP Note 1984787
 #
 #elevator = noop
 
@@ -358,7 +359,7 @@ ENABLE_PAGECACHE_LIMIT="no"
 #
 # Requirements and settings during sapconf package installation:
 #
-# sysstat - see SAP Note 1310037
+# sysstat - see SAP Note 1984787
 # package requirement, service is enabled and started during post installation
 # script
 #
@@ -383,4 +384,5 @@ ENABLE_PAGECACHE_LIMIT="no"
 # UserTasksMax will be set to 'infinity'
 # A message will indicate if a reboot/restart is necessary.
 #
-#SAPCONF_END=""
+# SCCU1
+#SAPCONF_END = ""

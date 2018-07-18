@@ -15,8 +15,7 @@ tune_preparation() {
     log "--- Going to apply universal tuning techniques"
 
     # Bunch of variables declared in upper case
-    # VSZ_TMPFS_PERCENT is by default 75, sysconfig file may override this value.
-    declare VSZ_TMPFS_PERCENT=75
+    declare VSZ_TMPFS_PERCENT=0
     declare TMPFS_SIZE_REQ=0
     VSZ_tmp=$(awk -v t=0 '/^(Mem|Swap)Total:/ {t+=$2} END {print t}' < /proc/meminfo) # total (system+swap) memory size in KB
     declare -r VSZ=$VSZ_tmp
@@ -55,7 +54,7 @@ tune_preparation() {
     # semaphore settings
     read -r SEMMSLCUR SEMMNSCUR SEMOPMCUR SEMMNICUR < <(sysctl -n kernel.sem)
     # Mount - tmpfs mount options and size
-    # disable shell check for variable 'discard'
+    # disable shell check for throwaway variable 'discard'
     # shellcheck disable=SC2034
     read -r discard discard discard TMPFS_OPTS discard < <(grep -E '^tmpfs /dev/shm .+' /proc/mounts)
     if [ ! "$TMPFS_OPTS" ]; then
@@ -199,18 +198,13 @@ revert_page_cache_limit() {
 
 # tune_uuidd_socket unconditionally enables and starts uuidd.socket as recommended in "1984787 - Installation notes".
 tune_uuidd_socket() {
-    log "--- Going to enable uuidd.socket"
     if ! systemctl is-active uuidd.socket; then
-        save_value uuidd 1
+        # paranoia: should not happen, because uuidd.socket should be enabled
+        # by vendor preset and sapconf.service should start uuidd.socket.
+        log "--- Going to enable and start uuidd.socket"
         systemctl enable uuidd.socket
         systemctl start uuidd.socket
     fi
-}
-
-# revert_uuidd_socket reverts uuidd.socket to disabled state.
-revert_uuidd_socket() {
-    UUIDD=$(restore_value uuidd)
-    [ "$UUIDD" ] && log "Revert uuidd.socket to disabled state" && systemctl disable uuidd.socket && systemctl stop uuidd.socket
 }
 
 # revert_shmmni reverts kernel.shmmni value to previous state.
