@@ -19,7 +19,13 @@ start() {
     tune_uuidd_socket
 
     # SAP note 1680803 - best practice
-    source /etc/sysconfig/sapnote-1680803
+    if [ -r /etc/sysconfig/sapnote-1680803 ]; then
+        # remove blanks from the variable declaration to prevent errors
+        sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapnote-1680803 && source /etc/sysconfig/sapnote-1680803
+    else
+        log 'Failed to read /etc/sysconfig/sapnote-1680803'
+        exit 1
+    fi
 
     # SAP Note 2534844, bsc#874778
     save_value kernel.shmmni "$(sysctl -n kernel.shmmni)"
