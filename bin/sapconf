@@ -18,7 +18,7 @@
 #
 # Author:  Werner Fink <werner@suse.de>, 2007
 # Author:  Howard Guo <hguo@suse.com>, 2015
-#
+# Author:  Zsolt Kalmar <zkalmar@suse.com>, 2018
 
 # /usr/sbin/sapconf traditionally performed automatic system tuning for SAP
 # NetWeaver products.
@@ -26,8 +26,6 @@
 # implementation is moved entirely into tune daemon profiles.
 # In additional to support SAP NetWeaver tuning, sapconf is extended to be
 # also able to activate HANA tuning profile via the tune daemon.
-
-echo 'Warning: sapconf is deprecated. Please use system tuning daemon (tuned) instead.'
 
 if ! rpm -q tuned &> /dev/null; then
   echo 'Missing package "tuned". Please install the package as user root using command line "zypper install tuned" and then try again.'
