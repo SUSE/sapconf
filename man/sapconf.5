@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 5 "April 2018" "sapconf configuration file"
+.TH sapconf 5 "August 2018" "sapconf configuration file"
 .SH NAME
 sapconf \- central configuration file of sapconf
 
@@ -69,30 +69,6 @@ Linux kernel setting, set in the common part (tune_preparation) of the scripting
 SAP Note 941735, HANA Administration Guide
 .RE
 .PP
-.TP 0
-.BI "Semaphore limits"
-The next 4 values define the Semaphore limits \fBkernel.sem\fP
-.br
-kernel.sem = SEMMSL SEMMNS SEMOPM SEMMNI
-.RS 4
-.TP 3
-.BI SEMMSL=32000
-The lower tuning limit of the maximum number of semaphores per semaphore set.
-.TP 3
-.BI SEMMNS=1024000000
-The lower tuning limit of the maximum total number of semaphores.
-.TP 3
-.BI SEMOPM=500
-The lower tuning limit of the maximum number of semaphore operations that can be performed per "semop" system call.
-.TP 3
-.BI SEMMNI=32000
-The lower tuning limit of maxium total number of semaphore sets.
-.PP
-Semaphore limits, set in the common part (tune_preparation) of the scripting
-.br
-SAP Note 1275776
-.RE
-.PP
 \fBLIMIT_1="@sapsys soft nofile 65536"\fP
 .br
 \fBLIMIT_2="@sapsys hard nofile 65536"\fP
@@ -128,7 +104,7 @@ MAX_MAP_COUNT set to MAX_INT (2147483647)
 .RS 4
 Memory Management setting in the common part (tune_preparation) of the scripting
 .br
-SAP Note 1275776, 900929, HANA Administration Guide
+SAP Note 1980196, 900929, HANA Administration Guide
 .RE
 .PP
 .TP 4
@@ -140,7 +116,7 @@ The value is the maximum number of shared memory identifies available in the sys
 .RS 4
 Linux kernel setting, set in the profile specific part of the scripting
 .br
-SAP Note 2534844, bsc#874778, HANA Administration Guide
+SAP Note 2534844, HANA Administration Guide
 .RE
 .PP
 .TP 4
@@ -158,7 +134,7 @@ Note: the minimum value allowed for dirty_bytes is two pages (in bytes); any val
 .RS 4
 Memory Management setting in the profile specific part of the scripting
 .br
-TID_7010287
+SAP Note 2578899
 .RE
 .PP
 .TP 4
@@ -174,7 +150,7 @@ Note: when changing the tuned profile or switching off tuned, both values will b
 .RS 4
 Memory Management setting in the profile specific part of the scripting
 .br
-TID_7010287
+SAP Note 2578899
 .RE
 .PP
 .TP 4
@@ -186,7 +162,7 @@ This value is important for large ScaleOut HANA clusters and HANA2 in general. S
 .RS 4
 IO related setting \fBnet.ipv4.tcp_slow_start_after_idle\fP during the profile specific part of the scripting
 .br
-SAP Note 
+SAP Note 2382421
 .RE
 .PP
 .TP 4
@@ -196,7 +172,7 @@ Kernel Samepage Merging (KSM). KSM allows for an application to register with th
 .RS 4
 Set in \fB/sys/kernel/mm/ksm/run\fP during the profile specific part of the scripting
 .br
-SAP Note 2205917
+SAP Note 2684254
 .RE
 .PP
 .TP 4
@@ -208,7 +184,7 @@ Turn off autoNUMA balancing. 0 to disable, 1 to enable
 .RS 4
 Set in \fB/proc/sys/kernel/numa_balancing\fP during the profile specific part of the scripting
 .br
-SAP Note 2205917
+SAP Note 2684254
 .RE
 .PP
 .TP 4
@@ -220,7 +196,7 @@ Set to 'never' to disable or to 'always' to enable.
 .RS 4
 Set in \fB/sys/kernel/mm/transparent_hugepage/enabled\fP during the profile specific part of the scripting
 .br
-SAP Note 2131662, 2205917, 2031375
+SAP Note 2131662, 2684254, 2031375
 .RE
 .PP
 .TP 0
@@ -245,7 +221,7 @@ The value is commented out by default
 .RS 4
 Set during start, stop or profile change of tuned.
 .br
-SAP Note 2205917
+SAP Note 2684254
 .RE
 .PP
 .TP 4
@@ -263,7 +239,7 @@ The value is commented out by default
 .RS 4
 Set during start, stop or profile change of tuned.
 .br
-SAP Note 2205917
+SAP Note 2684254
 .RE
 .PP
 .TP 4
@@ -279,7 +255,7 @@ To switch off these dynamically changes the latency can be forced to a specific 
 .RS 4
 Set during start, stop or profile change of tuned.
 .br
-SAP Note 2205917
+SAP Note 2684254
 .RE
 .PP
 .TP 4
@@ -297,7 +273,7 @@ The value is commented out by default
 .RS 4
 Set during start, stop or profile change of tuned.
 .br
-SAP Note
+SAP Note 2684254
 .RE
 .PP
 .TP 4
@@ -313,7 +289,7 @@ When set, all block devices on the system will be switched to the chosen schedul
 .RS 4
 Set during start, stop or profile change of tuned.
 .br
-SAP Note
+SAP Note 2578899
 .RE
 .PP
 .SH DESCRIPTION OF PART 3
@@ -324,19 +300,19 @@ These values are profile independent. They describe requirements and settings du
 .BI sysstat
 Package requirement. The service is started after installation of the package.
 .br
-SAP Note 1310037
+SAP Note 2578899
 .PP
 .TP 4
 .BI uuidd.socket
 Package requirement. The service is enabled and started after installation of the package.
 .br
-SAP Note 1984787
+SAP Note 2578899
 .PP
 .TP 4
 .BI sapinit-systemd-compat
 Package requirementm, only needed for SLES12GA and SLES12SP1. This package adds the needed drop-in file to the systemd configuration and told the daemon to re-read its configuration.
 .br
-SAP Note 1984787
+SAP Note 2578899
 .PP
 .TP 4
 .BI USERTASKSMAX=infinity
@@ -349,7 +325,7 @@ A message will indicate if a reboot is necessary.
 .br
 There is no rollback.
 .br
-SAP Note 2205917, 1984787
+SAP Note 2684254, 2578899
 .PP
 .SH "FILES"
 .PP

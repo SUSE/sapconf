@@ -10,28 +10,22 @@
 cd /usr/lib/sapconf || exit 1
 . util.sh
 
-# tune_preparation applies tuning techniques from "1275776 - Preparing SLES for SAP" and "1984787 - Installation notes".
+# tune_preparation applies tuning techniques from "1275776 - Preparing SLES for SAP" and "2578899 - Installation notes".
 tune_preparation() {
     log "--- Going to apply universal tuning techniques"
 
     # Bunch of variables declared in upper case
-    # VSZ_TMPFS_PERCENT is by default 75, sysconfig file may override this value.
-    declare VSZ_TMPFS_PERCENT=75
+    declare VSZ_TMPFS_PERCENT=0
     declare TMPFS_SIZE_REQ=0
     VSZ_tmp=$(awk -v t=0 '/^(Mem|Swap)Total:/ {t+=$2} END {print t}' < /proc/meminfo) # total (system+swap) memory size in KB
     declare -r VSZ=$VSZ_tmp
     declare TMPFS_OPTS
     declare TMPFS_SIZE
 
-    # semaphore variables
-    declare SEMMSLCUR
-    declare SEMMNSCUR
-    declare SEMOPMCUR
-    declare SEMMNICUR
-
     # Read value requirements from sysconfig, the declarations will set variables above.
     if [ -r /etc/sysconfig/sapconf ]; then
-        source /etc/sysconfig/sapconf
+        # remove blanks from the variable declaration to prevent errors
+        sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapconf && source /etc/sysconfig/sapconf
     else
         log 'Failed to read /etc/sysconfig/sapconf'
         exit 1
@@ -39,7 +33,7 @@ tune_preparation() {
 
     # paranoia: should not happen, because post script of package installation
     # should rewrite variable names. But....
-    for par in SHMALL_MIN SHMMAX_MIN SEMMSL_MIN SEMMNS_MIN SEMOPM_MIN SEMMNI_MIN MAX_MAP_COUNT_DEF SHMMNI_DEF DIRTY_BYTES_DEF DIRTY_BG_BYTES_DEF; do
+    for par in SHMALL_MIN SHMMAX_MIN MAX_MAP_COUNT_DEF SHMMNI_DEF DIRTY_BYTES_DEF DIRTY_BG_BYTES_DEF; do
         npar=${par%_*}
         if [ -n "${!par}" ] && [ -z "${!npar}" ]; then
             # the only interesting case:
@@ -52,10 +46,8 @@ tune_preparation() {
 
     ## Collect current information
 
-    # semaphore settings
-    read -r SEMMSLCUR SEMMNSCUR SEMOPMCUR SEMMNICUR < <(sysctl -n kernel.sem)
     # Mount - tmpfs mount options and size
-    # disable shell check for variable 'discard'
+    # disable shell check for throwaway variable 'discard'
     # shellcheck disable=SC2034
     read -r discard discard discard TMPFS_OPTS discard < <(grep -E '^tmpfs /dev/shm .+' /proc/mounts)
     if [ ! "$TMPFS_OPTS" ]; then
@@ -87,18 +79,6 @@ tune_preparation() {
     chk_and_set_conf_val SHMMAX kernel.shmmax
     save_value kernel.shmall "$(sysctl -n kernel.shmall)"
     chk_and_set_conf_val SHMALL kernel.shmall
-    # Tweak semaphore
-    SEMMSL=$(chk_conf_val SEMMSL "$SEMMSLCUR")
-    SEMMNS=$(chk_conf_val SEMMNS "$SEMMNSCUR")
-    SEMOPM=$(chk_conf_val SEMOPM "$SEMOPMCUR")
-    SEMMNI=$(chk_conf_val SEMMNI "$SEMMNICUR")
-    if [ "$SEMMSLCUR $SEMMNSCUR $SEMOPMCUR $SEMMNICUR" != "$SEMMSL $SEMMNS $SEMOPM $SEMMNI" ]; then
-        save_value kernel.sem "$(sysctl -n kernel.sem)"
-        log "Change kernel.sem from '$SEMMSLCUR $SEMMNSCUR $SEMOPMCUR $SEMMNICUR' to '$SEMMSL $SEMMNS $SEMOPM $SEMMNI'"
-        sysctl -w "kernel.sem=$SEMMSL $SEMMNS $SEMOPM $SEMMNI"
-    else
-        log "Leaving kernel.sem unchanged at '$SEMMSLCUR $SEMMNSCUR $SEMOPMCUR $SEMMNICUR'"
-    fi
     # Tweak max_map_count
     save_value vm.max_map_count "$(sysctl -n vm.max_map_count)"
     chk_and_set_conf_val MAX_MAP_COUNT vm.max_map_count
@@ -123,19 +103,15 @@ tune_preparation() {
     log "--- Finished application of universal tuning techniques"
 }
 
-# revert_preparation reverts tuning operations conducted by "1275776 - Preparing SLES for SAP" and "1984787 - Installation notes".
+# revert_preparation reverts tuning operations conducted by "1275776 - Preparing SLES for SAP" and "2578899 - Installation notes".
 revert_preparation() {
     log "--- Going to revert universally tuned parameters"
     # Restore tuned kernel parameters
     SHMMAX=$(restore_value kernel.shmmax)
     [ "$SHMMAX" ] && log "Restoring kernel.shmmax=$SHMMAX" && sysctl -w kernel.shmmax="$SHMMAX"
 
-
     SHMALL=$(restore_value kernel.shmall)
     [ "$SHMALL" ] && log "Restoring kernel.shmall=$SHMALL" && sysctl -w kernel.shmall="$SHMALL"
-
-    SEM=$(restore_value kernel.sem)
-    [ "$SEM" ] && log "Restoring kernel.sem=$SEM" && sysctl -w kernel.sem="$SEM"
 
     MAX_MAP_COUNT=$(restore_value vm.max_map_count)
     [ "$MAX_MAP_COUNT" ] && log "Restoring vm.max_map_count=$MAX_MAP_COUNT" && sysctl -w vm.max_map_count="$MAX_MAP_COUNT"
@@ -147,20 +123,15 @@ revert_preparation() {
     log "--- Finished reverting universally tuned parameters"
 }
 
-# tune_uuidd_socket unconditionally enables and starts uuidd.socket as recommended in "1984787 - Installation notes".
+# tune_uuidd_socket unconditionally enables and starts uuidd.socket as recommended in "2578899 - Installation notes".
 tune_uuidd_socket() {
-    log "--- Going to enable uuidd.socket"
     if ! systemctl is-active uuidd.socket; then
-        save_value uuidd 1
+        # paranoia: should not happen, because uuidd.socket should be enabled
+        # by vendor preset and sapconf.service should start uuidd.socket.
+        log "--- Going to enable and start uuidd.socket"
         systemctl enable uuidd.socket
         systemctl start uuidd.socket
     fi
-}
-
-# revert_uuidd_socket reverts uuidd.socket to disabled state.
-revert_uuidd_socket() {
-    UUIDD=$(restore_value uuidd)
-    [ "$UUIDD" ] && log "Revert uuidd.socket to disabled state" && systemctl disable uuidd.socket && systemctl stop uuidd.socket
 }
 
 # revert_shmmni reverts kernel.shmmni value to previous state.

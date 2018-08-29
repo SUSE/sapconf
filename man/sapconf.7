@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "April 2018" "util-linux" "System Administration"
+.TH sapconf 8 "August 2018" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -66,7 +66,7 @@ See the man page \fBtuned-profiles-sapconf(7)\fR for details.
 To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA, Sybase/ASE, BOBJ and NetWeaver workloads. That means that the former profiles "sap\-netweaver", "sap\-hana", "sap\-ase" and "sap\-bobj" existing in SLE12 are consolidated in one basic sapconf profile.
 
 .SH "SAP NOTES"
-All settings are done according to SAP note number 900929, 941735, 1275776, 1310037, 1557506, 1771258, 1984787, 2031375, 2055470, 2131662, 2205917, 2534844 and TID_7010287
+All settings are done according to SAP note number 900929, 941735, 1771258, 1980196, 2578899, 2031375, 2055470, 2131662, 2684254, 2382421 and 2534844
 .br
 See the comments in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR or \fBsapconf(5)\fP for details.
 
@@ -74,11 +74,11 @@ See the comments in the central sapconf configuration file \fI/etc/sysconfig/sap
 The following package requirements exist for the sapconf package:
 .TP 4
 .BI "sysstat" 
-service is started after package installation (see SAP Note 1310037)
+service is started after package installation (see SAP Note 2578899)
 .PP
 .TP 4
 .BI "uuidd.socket"
-service is enabled and started after package installation (see SAP Note 1984787)
+service is enabled and started after package installation (see SAP Note 2578899)
 .PP
 This information is additionally commented in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR.
 .PP
