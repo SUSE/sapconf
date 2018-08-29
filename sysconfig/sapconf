@@ -44,34 +44,6 @@ SHMALL=1152921504606846720
 #
 SHMMAX=18446744073709551615
 
-# kernel.sem
-# The next 4 values define the Semaphore limits
-# kernel.sem = SEMMSL SEMMNS SEMOPM SEMMNI
-#
-# SAP Note 1275776
-#
-
-# The lower tuning limit of the maximum number of semaphores per semaphore set.
-# Set to 32000
-#
-SEMMSL=32000
-
-# The lower tuning limit of the maximum total number of semaphores.
-# Set to 1024000000
-#
-SEMMNS=1024000000
-
-# The lower tuning limit of the maximum number of semaphore operations that
-# can be performed per "semop" system call.
-# Set to 500
-#
-SEMOPM=500
-
-# The lower tuning limit of maxium total number of semaphore sets.
-# Set to 32000
-#
-SEMMNI=32000
-
 # /etc/security/limits.conf
 ## Type:        regexp(^@(sapsys|sdba|dba)[[:space:]]+(-|hard|soft)[[:space:]]+(nofile)[[:space:]]+[[:digit:]]+)
 #
@@ -97,7 +69,7 @@ LIMIT_6="@dba hard nofile 65536"
 #
 # vm.max_map_count should be set to MAX_INT (2147483647)
 #
-# SAP Note 1275776, 900929, HANA Administration Guide
+# SAP Note 1980196, 900929, HANA Administration Guide
 #
 MAX_MAP_COUNT=2147483647
 
@@ -107,9 +79,9 @@ MAX_MAP_COUNT=2147483647
 #
 # kernel.shmmni is set to the SHMMNI value from this file
 #
-# kernel.shmmni should be set to 32768 (see bsc#874778)
+# kernel.shmmni should be set to 32768
 #
-# SAP Note 2534844, bsc#874778, HANA Administration Guide
+# SAP Note 2534844, HANA Administration Guide
 #
 SHMMNI=32768
 
@@ -130,7 +102,7 @@ SHMMNI=32768
 #
 # vm.dirty_bytes should be set to 629145600 (see TID_7010287)
 #
-# TID_7010287
+# SAP Note 2578899
 #
 DIRTY_BYTES=629145600
 
@@ -148,7 +120,7 @@ DIRTY_BYTES=629145600
 #
 # vm.dirty_background_bytes should be set to 314572800 (see TID_7010287)
 #
-# TID_7010287
+# SAP Note 2578899
 #
 DIRTY_BG_BYTES=314572800
 
@@ -161,7 +133,8 @@ DIRTY_BG_BYTES=314572800
 # This value is important for large ScaleOut HANA clusters and HANA2 in general.
 # So disable TCP slow start on idle connections
 # set net.ipv4.tcp_slow_start_after_idle=0
-# SAP Note
+#
+# SAP Note 2382421
 #
 TCP_SLOW_START=0
 
@@ -176,7 +149,7 @@ TCP_SLOW_START=0
 #
 # ksm set to 0
 #
-# SAP Note 2205917
+# SAP Note 2684254
 #
 KSM=0
 
@@ -202,7 +175,7 @@ KSM=0
 # 0 to disable, 1 to enable
 # numa_balancing set to 0
 #
-# SAP Note 2205917
+# SAP Note 2684254
 #
 NUMA_BALANCING=0
 
@@ -213,7 +186,7 @@ NUMA_BALANCING=0
 # Disable transparent hugepages
 # set to 'never'
 #
-# SAP Note 2131662, 2205917, 2031375
+# SAP Note 2131662, 2684254, 2031375
 #
 THP=never
 
@@ -237,7 +210,7 @@ THP=never
 #
 # Value is commented out by default
 #
-# SAP Note 2205917
+# SAP Note 2684254
 #
 #energy_perf_bias = performance
 
@@ -252,7 +225,7 @@ THP=never
 #
 # Value is commented out by default
 #
-# SAP Note 2205917
+# SAP Note 2684254
 #
 #governor = performance
 
@@ -273,7 +246,7 @@ THP=never
 #
 # Value is set to 70
 #
-# SAP Note 2205917
+# SAP Note 2684254
 #
 #force_latency = 70
 
@@ -291,7 +264,7 @@ THP=never
 #
 # Value is commented out by default
 #
-# SAP Note
+# SAP Note 2684254
 #
 #min_perf_pct = 100
 
@@ -311,7 +284,7 @@ THP=never
 # When set, all block devices on the system will be switched to the chosen
 # scheduler.
 #
-# SAP Note
+# SAP Note 2578899
 #
 #elevator = noop
 
@@ -319,19 +292,19 @@ THP=never
 #
 # Requirements and settings during sapconf package installation:
 #
-# sysstat - see SAP Note 1310037
+# sysstat - see SAP Note 2578899
 # package requirement, service is enabled and started during post installation
 # script
 #
-# uuidd - see SAP Note 1984787
+# uuidd - see SAP Note 2578899
 # package requirement, service is enabled and started during post installation
 # script
 #
-# sapinit-systemd-compat - see SAP Note 1984787
+# sapinit-systemd-compat - see SAP Note 2578899
 # package requirement, only needed for SLES12GA and SLES12SP1
 #
 # /etc/systemd/logind.conf.d/sap.conf UserTasksMax setting
-# see SAP Note 2205917 and 1984787
+# see SAP Note 2684254 and 2578899
 # This file configures a parameter of the systemd login manager
 # It sets the maximum number of OS tasks each user may run concurrently
 # The behaviour of the systemd login manager was changed starting SLES12SP2
@@ -344,4 +317,6 @@ THP=never
 # UserTasksMax will be set to 'infinity'
 # A message will indicate if a reboot/restart is necessary.
 #
-#SAPCONF_END=""
+# SCCU1
+# SCCU1-15
+#SAPCONF_END = ""
