@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-# shellcheck disable=SC1091
+# shellcheck disable=SC1090,SC1091
 
 # util.sh provides utility functions to assist in calculating and applying tuned parameters
 
@@ -102,5 +102,22 @@ chk_and_set_conf_val() {
         else
             log "Leaving $param unchanged at $current_val"
         fi
+    fi
+}
+
+# source config file from /etc/sysconfig
+source_sysconfig() {
+    declare cfgfile=$1
+    # remove blanks from the variable declaration to prevent errors
+    if sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' "$cfgfile" >/dev/null 2>&1; then
+        source "$cfgfile"
+    else
+        # use a temporary file for /etc/sysconfig/sapconf to avoid problems
+        # with read only /etc filesystem of FlexFrame
+        TMPSAPCONF=$(mktemp /tmp/sapconf_$$.XXXX)
+
+        sed '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' "$cfgfile" > "$TMPSAPCONF"
+        source "$TMPSAPCONF"
+        rm -f "$TMPSAPCONF"
     fi
 }

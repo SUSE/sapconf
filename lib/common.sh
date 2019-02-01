@@ -30,8 +30,7 @@ tune_preparation() {
 
     # Read value requirements from sysconfig, the declarations will set variables above.
     if [ -r /etc/sysconfig/sapconf ]; then
-        # remove blanks from the variable declaration to prevent errors
-        sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapconf && source /etc/sysconfig/sapconf
+        source_sysconfig /etc/sysconfig/sapconf
     else
         log 'Failed to read /etc/sysconfig/sapconf'
         exit 1
@@ -157,8 +156,7 @@ tune_page_cache_limit() {
     declare ENABLE_PAGECACHE_LIMIT="no"
     # The configuration file should overwrite the three parameters above
     if [ -r /etc/sysconfig/sapconf ]; then
-        # remove blanks from the variable declaration to prevent errors
-        sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapconf && source /etc/sysconfig/sapconf
+        source_sysconfig /etc/sysconfig/sapconf
     fi
     if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
         if [ -z "$PAGECACHE_LIMIT_MB" ]; then

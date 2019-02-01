@@ -26,8 +26,7 @@ start() {
     # if value is not set in sysconfig file, log a message and keep the
     # current system value
     if [ -r /etc/sysconfig/sapconf ]; then
-        # remove blanks from the variable declaration to prevent errors
-        sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapconf && source /etc/sysconfig/sapconf
+	source_sysconfig /etc/sysconfig/sapconf
     else
         log 'Failed to read /etc/sysconfig/sapconf'
         exit 1
