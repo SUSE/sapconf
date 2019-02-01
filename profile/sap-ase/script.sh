@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC1091,SC2068
+# shellcheck disable=SC1090,SC1091,SC2068
 
 # Optimise kernel parameters for running SAP ASE.
 # The calculations are based on:
@@ -21,7 +21,17 @@ start() {
     # SAP note 1680803 - best practice
     if [ -r /etc/sysconfig/sapnote-1680803 ]; then
         # remove blanks from the variable declaration to prevent errors
-        sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapnote-1680803 && source /etc/sysconfig/sapnote-1680803
+        if sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapnote-1680803 >/dev/null 2>&1; then
+            source /etc/sysconfig/sapnote-1680803
+        else
+            # use a temporary file for /etc/sysconfig/sapnote-1680803 to avoid
+            # problems with read only /etc filesystem of FlexFrame
+            TMPSAPNOTE=$(mktemp /tmp/sapnote-1680803_$$.XXXX)
+
+            sed '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapnote-1680803 > "$TMPSAPNOTE"
+            source "$TMPSAPNOTE"
+            rm -f "$TMPSAPNOTE"
+        fi
     else
         log 'Failed to read /etc/sysconfig/sapnote-1680803'
         exit 1
