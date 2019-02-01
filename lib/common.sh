@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=SC1091
+# shellcheck disable=SC1090,SC1091
 
 # common.sh implements common tuning techniques that are universally applied to many SAP softwares.
 # Authors:
@@ -25,7 +25,17 @@ tune_preparation() {
     # Read value requirements from sysconfig, the declarations will set variables above.
     if [ -r /etc/sysconfig/sapconf ]; then
         # remove blanks from the variable declaration to prevent errors
-        sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapconf && source /etc/sysconfig/sapconf
+        if sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapconf >/dev/null 2>&1; then
+            source /etc/sysconfig/sapconf
+        else
+            # use a temporary file for /etc/sysconfig/sapconf to avoid problems
+            # with read only /etc filesystem of FlexFrame
+            TMPSAPCONF=$(mktemp /tmp/sapconf_$$.XXXX)
+
+            sed '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapconf > "$TMPSAPCONF"
+            source "$TMPSAPCONF"
+            rm -f "$TMPSAPCONF"
+        fi
     else
         log 'Failed to read /etc/sysconfig/sapconf'
         exit 1

@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC1091,SC2068
+# shellcheck disable=SC1090,SC1091,SC2068
 
 # Optimise kernel parameters for running SAP HANA and HANA based products (such as Business One).
 # The calculations are based on:
@@ -25,7 +25,17 @@ start() {
     # current system value
     if [ -r /etc/sysconfig/sapconf ]; then
         # remove blanks from the variable declaration to prevent errors
-        sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapconf && source /etc/sysconfig/sapconf
+        if sed -i '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapconf >/dev/null 2>&1; then
+            source /etc/sysconfig/sapconf
+        else
+            # use a temporary file for /etc/sysconfig/sapconf to avoid problems
+            # with read only /etc filesystem of FlexFrame
+            TMPSAPCONF=$(mktemp /tmp/sapconf_$$.XXXX)
+
+            sed '/^[^#].*[[:blank:]][[:blank:]]*=[[:blank:]][[:blank:]]*.*/s%[[:blank:]]%%g' /etc/sysconfig/sapconf > "$TMPSAPCONF"
+            source "$TMPSAPCONF"
+            rm -f "$TMPSAPCONF"
+        fi
     else
         log 'Failed to read /etc/sysconfig/sapconf'
         exit 1
