@@ -22,7 +22,7 @@ sapconf \- Kernel and system configuration for SAP products
 For compatibility reasons the command sapconf(8) exists.
 .\" *But sapconf(8) is deprecated in favour of tune daemon (tuned) and its profiles "sap-netweaver", "sap-hana", "sap-ase", "sap-bobj" bnc#1098352.
 .PP
-The profiles are stored in subdirectories below \fI/usr/lib/tuned\fP. If you need to customize the profiles, you can copy them to \fI/etc/tuned\fP and modify them as you need. If only copying the \fItuned.conf\fP file, please do not forget to adjust the script path in the \fB[script]\fP section to \fI/usr/lib/tuned/<profile>/script.sh\fP. Or copy the script.sh as well.
+The profiles are stored in subdirectories below \fI/usr/lib/tuned\fP. If you need to customize the profiles, you can copy them to \fI/etc/tuned\fP and modify them as you need. It's sufficient to copy the \fItuned.conf\fP file, so you can benefit from package updates of the \fIscript.sh\fP in \fI/usr/lib/tuned\fP.
 .PP
 When loading profiles the files in \fI/etc/tuned\fP takes precedence. In such case you will not lose your customized profiles between tuned or sapconf updates. But be in mind, to get the new behaviour the package update is carrying along, remove the profile copy from \fI/etc/tuned\fP or copy the new profile from \fI/usr/lib/tuned/<profile>\fP to \fI/etc/tuned/<profile>\fP or compare the files in \fI/etc/tuned/<profile>\fP with the files in \fI/usr/lib/tuned/<profile>\fP manually and adjust the content, if needed.
 .PP
