@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2015-2018 SUSE LLC
+.\" * Copyright (c) 2015-2020 SUSE LLC
 .\" * Authors: Howard Guo
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "August 2018" "util-linux" "System Administration"
+.TH sapconf 7 "February 2020" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -55,6 +55,14 @@ systemctl enabled sapconf.service
 Start
 .br
 systemctl start sapconf.service
+
+If the start of the sapconf.service failed, use the command '\fBsystemctl status sapconf -l\fR' to get detailed information about the failure.
+
+If you see the error message:
+.br
+\fBnon-sapconf tuned profile configured. Skipping activation. See man sapconf for details.\fR
+
+please check the active tuned profile by '\fBtuned-adm active\fR' and change it to the pre\-defined sapconf profile by '\fBtuned-adm profile sapconf\fR' and then start sapconf.service again.
 
 .SH PROFILES
 At the moment we're providing one pre\-defined profile:
@@ -104,7 +112,7 @@ Please stop the sysstat service manually, if it is not needed any longer.
 The central configuration file of sapconf is not removed during package removal.
 .PP
 .TP 4
-.BI /etc/tuned/sap\*
+.BI /etc/tuned/sap*
 Private copies of tuned profiles in /etc/tuned are not removed during package removal.
 .PP
 .TP 4
