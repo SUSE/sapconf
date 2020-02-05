@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2015-2017 SUSE LLC
+.\" * Copyright (c) 2015-2020 SUSE LLC
 .\" * Authors: Howard Guo
 .\" *	       Zsolt KALMAR
 .\" *
@@ -15,7 +15,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "April 2018" "util-linux" "System Administration"
+.TH sapconf 8 "February 2020" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -30,6 +30,12 @@ sapconf activates SAP NetWeaver, SAP ASE/Sybase, SAP Business OBJects (BOBJ) or 
 
 .IP \[bu]
 start,restart,try-restart - If the tune daemon does not have any profile active and there is no information about the last used sapconf profile available in \fI/var/lib/sapconf/last_profile\fR, activate SAP NetWeaver tuning profile. Otherwise leave the profile choice alone and activate tune daemon.
+
+If the start failed and you get the error message:
+.br
+\fBnon-sapconf tuned profile configured. Skipping activation. See man sapconf for details.\fR
+
+please check the active tuned profile by '\fBtuned-adm active\fR' and change it to one of the pre\-defined sapconf profiles by '\fBtuned-adm profile <profile>\fR' and then start sapconf again.
 
 .IP \[bu]
 reload - If the current tuned profile is a sapconf profile, restart the tuned service.
