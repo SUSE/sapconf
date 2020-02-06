@@ -4,7 +4,7 @@
 #
 # /usr/sbin/sapconf
 #
-# Copyright (c) 2015-2017 SUSE LLC
+# Copyright (c) 2015-2020 SUSE LLC
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -50,6 +50,10 @@ case "$1" in
       profile=$(cat /var/lib/sapconf/last_profile 2> /dev/null)
       profile=${profile:-sap-netweaver}
       tuned-adm profile "$profile" &> /dev/null
+    fi
+    if [[ $(cat /etc/tuned/active_profile) != sap-* ]]; then
+      echo 'non-sapconf tuned profile configured. Skipping activation. See man sapconf for details.'
+      exit 1
     fi
     if ! systemctl status tuned &> /dev/null; then
       systemctl start tuned
