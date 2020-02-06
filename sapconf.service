@@ -11,7 +11,7 @@ Requires=uuidd.socket
 Type=oneshot
 RemainAfterExit=true
 ExecStartPre=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == "" ]]; then tuned-adm profile sapconf &> /dev/null; fi'
-ExecStart=/usr/bin/systemctl start tuned.service
+ExecStart=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) != sapconf ]]; then echo "non-sapconf tuned profile configured. Skipping activation. See man sapconf for details."; exit 1; else /usr/bin/systemctl start tuned.service; fi'
 ExecReload=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == sapconf ]]; then /usr/bin/systemctl restart tuned.service; fi'
 ExecStop=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == sapconf ]]; then /usr/bin/systemctl stop tuned.service >/dev/null 2>&1;  > /etc/tuned/active_profile; fi'
 
