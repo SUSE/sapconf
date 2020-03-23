@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2017-2018 SUSE LLC
+.\" * Copyright (c) 2017-2020 SUSE LLC
 .\" * Authors: Angela Briel
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 5 "August 2018" "sapconf configuration file"
+.TH sapconf 5 "March 2020" "sapconf configuration file"
 .SH NAME
 sapconf \- central configuration file of sapconf
 
@@ -313,19 +313,6 @@ SAP Note 2578899
 Package requirementm, only needed for SLES12GA and SLES12SP1. This package adds the needed drop-in file to the systemd configuration and told the daemon to re-read its configuration.
 .br
 SAP Note 2578899
-.PP
-.TP 4
-.BI USERTASKSMAX=infinity
-The file \fB/etc/systemd/logind.conf.d/sap.conf\fP configures a parameter of the systemd login manager. It sets the maximum number of OS tasks each user may run concurrently. The behaviour of the systemd login manager was changed starting SLES12SP2 to prevent fork bomb attacks. So no need to set in SLES12SP1.
-.br
-The file will be created during package installation, if it does not already exists.
-.br
-Note: A reboot is needed after the first setup to get the change take effect.
-A message will indicate if a reboot is necessary.
-.br
-There is no rollback.
-.br
-SAP Note 2684254, 2578899
 .PP
 .SH "FILES"
 .PP

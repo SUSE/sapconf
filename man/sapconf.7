@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 7 "February 2020" "util-linux" "System Administration"
+.TH sapconf 7 "March 2020" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -93,12 +93,6 @@ This information is additionally commented in the central sapconf configuration 
 Note: These settings are profile independent. They will be applied during the post stage of the sapconf package installation.
 .PP
 Note: If the package sapconf is removed from the system, the following settings will still remain:
-.TP 4
-.BI "UserTasksMax setting in /etc/systemd/logind.conf.d/sap.conf"
-Please remove the file manually, if it is not needed any longer.
-.br
-Note: A reboot is needed after the removal of the file to get the change take effect.
-.PP
 .TP 4
 .BI "Maximum number of open file descriptors in /etc/security/limits.conf"
 Please remove the entries manually, if they are not needed any longer.
