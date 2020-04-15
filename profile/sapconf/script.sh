@@ -45,12 +45,25 @@ start() {
     chk_and_set_conf_val SHMMNI kernel.shmmni
 
     # SAP Note 2578899
-    save_value vm.dirty_bytes "$(sysctl -n vm.dirty_bytes)"
-    save_value vm.dirty_ratio "$(sysctl -n vm.dirty_ratio)" # value needed for revert of vm.dirty_bytes
-    chk_and_set_conf_val DIRTY_BYTES vm.dirty_bytes
-    save_value vm.dirty_background_bytes "$(sysctl -n vm.dirty_background_bytes)"
-    save_value vm.dirty_background_ratio "$(sysctl -n vm.dirty_background_ratio)" # value needed for revert of vm.dirty_background_bytes
-    chk_and_set_conf_val DIRTY_BG_BYTES vm.dirty_background_bytes
+    ps=$(getconf PAGESIZE)
+    [ ! "$ps" ] && ps=4096 # fallback and set a default
+    min_val=$(math "$ps * 2")
+    if [ "$DIRTY_BYTES" != "" ] && [ "$DIRTY_BYTES" -lt "$min_val" ]; then
+        log "ATTENTION: wrong value set in sysconfig file for 'DIRTY_BYTES'. It's '$DIRTY_BYTES', but need to be at least '$min_val'"
+        log "Leaving vm.dirty_bytes unchanged"
+    else
+        save_value vm.dirty_bytes "$(sysctl -n vm.dirty_bytes)"
+        save_value vm.dirty_ratio "$(sysctl -n vm.dirty_ratio)" # value needed for revert of vm.dirty_bytes
+        chk_and_set_conf_val DIRTY_BYTES vm.dirty_bytes
+    fi
+    if [ "$DIRTY_BG_BYTES" != "" ] && [ "$DIRTY_BG_BYTES" -eq 0 ]; then
+        log "ATTENTION: wrong value set in sysconfig file for 'DIRTY_BG_BYTES'. It's set to '0', but needs to be >0"
+        log "Leaving vm.dirty_background_bytes unchanged"
+    else
+        save_value vm.dirty_background_bytes "$(sysctl -n vm.dirty_background_bytes)"
+        save_value vm.dirty_background_ratio "$(sysctl -n vm.dirty_background_ratio)" # value needed for revert of vm.dirty_background_bytes
+        chk_and_set_conf_val DIRTY_BG_BYTES vm.dirty_background_bytes
+    fi
 
     # SAP Note 2382421
     cur_val=$(sysctl -n net.ipv4.tcp_slow_start_after_idle)
@@ -112,8 +125,24 @@ stop() {
     # to revert vm.dirty_background_ratio (reset during set of vm.dirty_background_bytes)
     # first revert vm.dirty_background_bytes, then vm.dirty_background_ratio
     for rest_value in kernel.shmmni vm.dirty_ratio vm.dirty_bytes vm.dirty_background_bytes vm.dirty_background_ratio net.ipv4.tcp_slow_start_after_idle; do
-	TVAL=$(restore_value $rest_value)
-	[ "$TVAL" ] && log "Restoring $rest_value=$TVAL" && sysctl -w "$rest_value=$TVAL"
+        TVAL=$(restore_value $rest_value)
+        [ ! "$TVAL" ] && continue
+        case "$rest_value" in
+        vm.dirty_ratio|vm.dirty_background_bytes|vm.dirty_background_ratio)
+            if [ "$TVAL" -eq 0 ]; then
+                TVAL=""
+            fi
+        ;;
+        vm.dirty_bytes)
+            ps=$(getconf PAGESIZE)
+            [ ! "$ps" ] && ps=4096 # fallback and set a default
+            min_val=$(math "$ps * 2")
+            if [ "$TVAL" -eq 0 ] || [ "$TVAL" -lt "$min_val" ]; then
+                TVAL=""
+            fi
+        ;;
+        esac
+        [ "$TVAL" ] && log "Restoring $rest_value=$TVAL" && sysctl -w "$rest_value=$TVAL"
     done
 
     # Restore THP, KSM and AutoNUMA settings
