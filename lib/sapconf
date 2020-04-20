@@ -1,6 +1,19 @@
 #!/bin/bash
-# shellcheck disable=SC1091,SC2068
+# shellcheck disable=SC1091
 
+#
+# Copyright (c) 2020 SUSE LLC
+#
+# This program is free software; you can redistribute it and/or
+# modify it under the terms of the GNU General Public License
+# as published by the Free Software Foundation; either version 2
+# of the License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
 # Optimise kernel parameters for running SAP HANA and HANA based products (such as Business One).
 # The calculations are based on:
 # - Parameters tuned by SAP installation wizard and configure_HANA.sh.
@@ -14,6 +27,16 @@ cd /usr/lib/sapconf || exit 1
 . common.sh
 
 start() {
+    log "--- "
+    log "--- starting sapconf ...."
+    log "--- "
+    # prevent a second start (apply of values) as this will override the
+    # saved old values of the parameters and reverting back to the
+    # original state will be impossible
+    [ -f /var/run/sapconf/active ] && log "sapconf already active, no second start supported" && exit 1
+    [ ! -d /var/run/sapconf ] && mkdir -p /var/run/sapconf
+    touch /var/run/sapconf/active
+
     log "--- Going to apply SAP tuning techniques"
     # Common tuning techniques apply to HANA and NetWeaver
     tune_preparation
@@ -25,6 +48,9 @@ start() {
     # current system value
     if [ -r /etc/sysconfig/sapconf ]; then
         source_sysconfig /etc/sysconfig/sapconf
+    else
+        log 'Failed to read /etc/sysconfig/sapconf'
+        exit 1
     fi
 
     # paranoia: should not happen, because post script of package installation
@@ -71,54 +97,56 @@ start() {
     if [ "$cur_val" != "$TCP_SLOW_START" ]; then
         save_value net.ipv4.tcp_slow_start_after_idle "$cur_val"
         log "Change net.ipv4.tcp_slow_start_after_idle from $cur_val to $TCP_SLOW_START"
-        sysctl -w net.ipv4.tcp_slow_start_after_idle="$TCP_SLOW_START"
+        sysctl -q -w net.ipv4.tcp_slow_start_after_idle="$TCP_SLOW_START"
     else
         log "Leaving net.ipv4.tcp_slow_start_after_idle unchanged at $cur_val"
     fi
 
     # SAP Note 2684254 - KSM and AutoNUMA both should be off
-    cur_val=$(cat /sys/kernel/mm/ksm/run)
-    KSM=$(chk_conf_val KSM "$cur_val")
-    if [ "$cur_val" != "$KSM" ]; then
-        save_value ksm "$cur_val"
-        log "Change ksm from $cur_val to $KSM"
-        echo "$KSM" > /sys/kernel/mm/ksm/run
-    else
-        log "Leaving ksm unchanged at $cur_val"
-    fi
-    cur_val=$(cat /proc/sys/kernel/numa_balancing)
-    NUMA_BALANCING=$(chk_conf_val NUMA_BALANCING "$cur_val")
-    if [ "$cur_val" != "$NUMA_BALANCING" ]; then
-        save_value numa_balancing "$cur_val"
-        log "Change numa_balancing from $cur_val to $NUMA_BALANCING"
-        echo "$NUMA_BALANCING" > /proc/sys/kernel/numa_balancing
-    else
-        log "Leaving numa_balancing unchanged at $cur_val"
-    fi
+    save_and_set_sys_val ksm /sys/kernel/mm/ksm/run
+    save_and_set_sys_val numa_balancing /proc/sys/kernel/numa_balancing
 
     # SAP Note 2684254 - Transparent Hugepage should be never
     # SAP Note 2055470 - Ignore transparent huge pages and c-state information given in the first two notes above. These technologies are different on IBM Power Servers. (Version 68 from Oct 11, 2017)
+    # the restriction for Power systems was removed from the SAP Note with Version 69 from 15.03.2018
+    cur_val=$(sed 's%.*\[\(.*\)\].*%\1%' /sys/kernel/mm/transparent_hugepage/enabled)
+    THP=$(chk_conf_val THP "$cur_val")
+    if [ "$cur_val" != "$THP" ]; then
+        save_value thp "$cur_val"
+        log "Change transparent_hugepage from $cur_val to $THP"
+        echo "$THP" > /sys/kernel/mm/transparent_hugepage/enabled
+    else
+        log "Leaving transparent_hugepage unchanged at $cur_val"
+    fi
+
     if [[ $(uname -m) == x86_64 ]]; then
-        cur_val=$(sed 's%.*\[\(.*\)\].*%\1%' /sys/kernel/mm/transparent_hugepage/enabled)
-        THP=$(chk_conf_val THP "$cur_val")
-        if [ "$cur_val" != "$THP" ]; then
-            save_value thp "$cur_val"
-            log "Change transparent_hugepage from $cur_val to $THP"
-            echo "$THP" > /sys/kernel/mm/transparent_hugepage/enabled
-        else
-            log "Leaving transparent_hugepage unchanged at $cur_val"
+        # SAP Note 2684254 - performance settings
+        log "--- Going to apply performance settings"
+        # latency settings
+        set_force_latency
+        # energy_perf_bias settings
+        set_perf_bias
+        # scaling governor settings
+        set_governor
+        # min_perf_pct settings
+        if [ -d /sys/devices/system/cpu/intel_pstate ]; then
+            save_and_set_sys_val min_perf_pct /sys/devices/system/cpu/intel_pstate/min_perf_pct
         fi
+        log "--- Finished application of performance settings"
     fi
 
     log "--- Finished application of SAP tuning techniques"
-    return 0
 }
 
 stop() {
-    log "--- Going to revert SAP tuned parameters"
+    log "--- "
+    log "--- stopping sapconf ...."
+    log "--- "
+    [ ! -f /var/run/sapconf/active ] && log "no active sapconf tuning, so nothing to revert" && exit 0
+
+    log "--- Going to revert SAP tuning parameters"
 
     revert_preparation
-    #revert_shmmni
 
     # Restore kernel.shmmni, vm.dirty_bytes, vm.dirty_background_bytes, net.ipv4.tcp_slow_start_after_idle
     # to revert vm.dirty_bytes first revert vm.dirty_ratio
@@ -142,22 +170,67 @@ stop() {
             fi
         ;;
         esac
-        [ "$TVAL" ] && log "Restoring $rest_value=$TVAL" && sysctl -w "$rest_value=$TVAL"
+        [ "$TVAL" ] && log "Restoring $rest_value=$TVAL" && sysctl -q -w "$rest_value=$TVAL"
     done
 
     # Restore THP, KSM and AutoNUMA settings
-    if [[ $(uname -m) == "x86_64" ]]; then
-        THP=$(restore_value thp)
-        [ "$THP" ] && log "Restoring thp=$THP" && echo "$THP"  > /sys/kernel/mm/transparent_hugepage/enabled
-    fi
+    THP=$(restore_value thp)
+    [ "$THP" ] && log "Restoring thp=$THP" && echo "$THP"  > /sys/kernel/mm/transparent_hugepage/enabled
 
     KSM=$(restore_value ksm)
     [ "$KSM" ] && log "Restoring ksm=$KSM" && echo "$KSM" > /sys/kernel/mm/ksm/run
     NUMA_BALANCING=$(restore_value numa_balancing)
     [ "$NUMA_BALANCING" ] && log "Restoring numa_balancing=$NUMA_BALANCING" && echo "$NUMA_BALANCING" > /proc/sys/kernel/numa_balancing
 
-    log "--- Finished reverting SAP tuned parameters"
-    return 0
+    if [[ $(uname -m) == x86_64 ]]; then
+        # restore performance settings
+        restore_force_latency
+        restore_perf_bias
+        restore_governor
+        # restore min_perf_pct
+        if [ -d /sys/devices/system/cpu/intel_pstate ]; then
+            MIN_PERF_PCT=$(restore_value min_perf_pct)
+            [ "$MIN_PERF_PCT" ] && log "Restoring min_perf_pct=$MIN_PERF_PCT" && echo "$MIN_PERF_PCT" > /sys/devices/system/cpu/intel_pstate/min_perf_pct
+        fi
+    fi
+
+    rm -f /var/run/sapconf/active
+    log "--- Finished reverting SAP tuning parameters"
 }
 
-process $@
+# main
+if [ -f /run/sapconf_during_pkg_inst ]; then
+    # workaround to prevent service reload during preun/postun from a previous
+    # sapconf (with tuned support) package, which gets triggered during package
+    # update of sapconf
+    exit 0
+fi
+
+log "--- /usr/sbin/sapconf called with '$1'"
+(systemctl -q is-enabled tuned || systemctl -q is-active tuned) && log "ATTENTION: tuned service is enabled/active, so we may encounter conflicting tuning values"
+
+if [ "$1" != "status" ]; then
+    # service should fail, if saptune.service is enabled or has exited / save
+    # state files are present
+    # (jsc#SLE-10987 decision)
+    if systemctl -q is-enabled saptune.service 2>/dev/null || [[ $(ls -A /var/lib/saptune/saved_state 2>/dev/null) ]]; then
+        log "ATTENTION: found an active saptune, so refuse any action"
+        exit 1
+    fi
+fi
+
+case "$1" in
+start)
+    start
+    ;;
+stop)
+    stop
+    ;;
+status)
+    systemctl status sapconf --no-pager && exit 0 || exit 1
+    ;;
+*)
+    echo "Usage: $0 {start|stop|status}"
+    exit 2
+    ;;
+esac
