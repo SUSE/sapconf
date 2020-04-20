@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2016, 2017 SUSE LLC
+.\" * Copyright (c) 2016-2020 SUSE LLC
 .\" * Authors: Angela Briel <abriel@suse.com>
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,9 +14,9 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH TUNED_PROFILES_SAP_BOBJ "7" "December 2017" "Adaptive system tuning daemon" "tuned"
+.TH PROFILE_SAPCONF_BOBJ "7" "April 2020" "sapconf profile"
 .SH NAME
-tuned\-profiles\-sap\-bobj - Tuning profile for SAP Business OBJects (BOBJ).
+profile\-sapconf\-bobj - Tuning profile for SAP Business OBJects (BOBJ).
 
 .SH DESCRIPTION
 The tuning profile automatically optimises kernel parameters and system configuration for running SAP Business OBJects (BOBJ) softwares.
@@ -40,12 +40,12 @@ CPU power management, disk cache, kernel scheduling and VM tweaks (inherited fro
 Enable uuidd.socket.
 
 .SH "SAP NOTES"
-The tuned parameters are calculated according to SAP note number 1275776, 1984787, 1557506 and the BOBJ Installation Guide for Unix.
+The tuning parameters are calculated according to SAP note number 1275776, 1984787, 1557506 and the BOBJ Installation Guide for Unix.
 
 .SH ACTIVATION
 To activate the SAP Business OBJects tuning profile, run as root:
 
-tuned-adm profile sap-bobj
+/usr/sbin/sapconf bobj
 
 .SH "FILES"
 .PP
@@ -54,14 +54,14 @@ tuned-adm profile sap-bobj
 Define the behaviour and overrides for the common settings from 1275776 and tuning pagecache limit.
 .RE
 .PP
-\fI/usr/lib/tuned/sap-bobj/tuned.conf\fR
+\fI/etc/sysconfig/sapnote\-bobj\fR
 .RS 4
-the sap-bobj profile special configuration file.
+the sapconf bobj profile special configuration file.
 .RE
 
 .SH "SEE ALSO"
-.BR tuned (8)
-.BR tuned\-adm (8)
+.BR sapconf (5)
+.BR sapconf (7)
 .SH AUTHOR
 .NF
 Angela Briel

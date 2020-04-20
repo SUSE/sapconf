@@ -15,7 +15,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "February 2020" "util-linux" "System Administration"
+.TH sapconf 8 "April 2020" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -29,16 +29,16 @@ sapconf activates SAP NetWeaver, SAP ASE/Sybase, SAP Business OBJects (BOBJ) or 
 .SH ACTIONS
 
 .IP \[bu]
-start,restart,try-restart - If the tune daemon does not have any profile active and there is no information about the last used sapconf profile available in \fI/var/lib/sapconf/last_profile\fR, activate SAP NetWeaver tuning profile. Otherwise leave the profile choice alone and activate tune daemon.
+start,restart,try-restart - If sapconf does not have any profile active and there is no information about the last used sapconf profile available in \fI/var/lib/sapconf/last_profile\fR, activate SAP NetWeaver tuning profile by default. Otherwise leave the profile choice alone and activate sapconf tuning.
 
 If the start failed and you get the error message:
 .br
-\fBnon-sapconf tuned profile configured. Skipping activation. See man sapconf for details.\fR
+\fBnon-sapconf tuning profile configured. Skipping activation. See man sapconf for details.\fR
 
-please check the active tuned profile by '\fBtuned-adm active\fR' and change it to one of the pre\-defined sapconf profiles by '\fBtuned-adm profile <profile>\fR' and then start sapconf again.
+please check the active sapconf tuning profile by '\fBcat /var/lib/sapconf/act_profile\fR' and change it to one of the pre\-defined profiles listed below by '\fB/usr/sbin/sapconf <profile>\fR'.
 
 .IP \[bu]
-reload - If the current tuned profile is a sapconf profile, restart the tuned service.
+reload - If a sapconf profile is active, stop and start the sapconf tuning.
 
 .IP \[bu]
 netweaver - Activate SAP NetWeaver tuning profile. Exit 1 on failure.
@@ -53,13 +53,13 @@ ase,sybase - Activate SAP ASE (Sybase) tuning profile. Exit 1 on failure.
 bobj - Activate SAP Business OBJects (BOBJ) tuning profile. Exit 1 on failure.
 
 .IP \[bu]
-stop - If the current tuned profile is a sapconf profile, stop the tune daemon, write the current sapconf profile to \fI/var/lib/sapconf/last_profile\fR and remove the sapconf profile from the active tuned profile file.
+stop - If a sapconf profile is active, revert the parameter settings back to the previous system settings, write the current sapconf profile to \fI/var/lib/sapconf/last_profile\fR and remove the sapconf profile from the active sapconf profile file.
 
 .IP \[bu]
-status - Report the status of tune daemon. Exit 1 on failure.
+status - Report the status of sapconf service. Exit 1 on failure.
 
 .SH SEE\ ALSO
-tuned-profiles-sap-hana(7), tuned-profiles-sap-netweaver(7), tuned-profiles-sap-ase(7), tuned-profiles-sap-bobj(7)
+profile-sapconf-hana(7), profile-sapconf-netweaver(7), profile-sapconf-ase(7), profile-sapconf-bobj(7)
 
 .SH AUTHORS
 .na

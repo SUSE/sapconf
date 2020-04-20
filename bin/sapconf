@@ -1,5 +1,5 @@
 #!/bin/bash
-# shellcheck disable=SC2188
+# shellcheck disable=SC2188,SC1091
 
 #
 # /usr/sbin/sapconf
@@ -27,88 +27,183 @@
 # implementation is moved entirely into tune daemon profiles.
 # In additional to support SAP NetWeaver tuning, sapconf is extended to be
 # also able to activate HANA tuning profile via the tune daemon.
+# Later the decision was taken to release the dependency to tune daemon and
+# go back to a simple shell script doing the work
 
-# echo 'Warning: sapconf is deprecated. Please use system tuning daemon (tuned) instead.'
-# This warning has been commented out accorording to bnc#1098352
+cd /usr/lib/sapconf || exit 1
+. util.sh
+. common.sh
+. profiles.sh
 
-if ! rpm -q tuned &> /dev/null; then
-  echo 'Missing package "tuned". Please install the package as user root using command line "zypper install tuned" and then try again.'
-  exit 1
+profile=$(cat /var/lib/sapconf/act_profile 2> /dev/null)
+
+start() {
+    log "--- "
+    log "--- starting sapconf ...."
+    log "--- "
+    # prevent a second start (apply of values) as this will override the
+    # saved old values of the parameters and reverting back to the
+    # original state will be impossible
+    if [[ $profile == "" ]]; then
+      profile=$(cat /var/lib/sapconf/last_profile 2> /dev/null)
+      if [[ $profile == "" && -f /run/sapconf_during_pkg_inst ]]; then
+          log "no active sapconf tuning - profile=$profile - and we are during a package update, so nothing to do"
+          exit 0
+      fi
+    else
+      log "profile '$profile' already active, no second start supported"
+      exit 0
+    fi
+    profile=${profile:-sapconf-netweaver}
+    echo "$profile" > /var/lib/sapconf/act_profile
+
+    case  "$profile" in
+    sapconf-netweaver)
+      log "--- Going to apply netweaver tuning techniques"
+      tune_netweaver
+    ;;
+    sapconf-hana)
+      log "--- Going to apply hana tuning techniques"
+      tune_hana
+    ;;
+    sapconf-ase)
+      log "--- Going to apply ase (sybase) tuning techniques"
+      tune_ase
+    ;;
+    sapconf-bobj)
+      log "--- Going to apply bobj tuning techniques"
+      tune_bobj
+    ;;
+    *)
+      log "ERROR: Unknown profile '$profile'."
+      log "non-sapconf tuning profile configured. Skipping activation. See man sapconf for details.'"
+      log "       Please use '/usr/bin/sapconf <profile>' to set and start a valid sapconf profile"
+      exit 1
+    ;;
+    esac
+  log "--- Finished application of SAP tuning techniques"
+}
+
+stop() {
+    log "--- "
+    log "--- stopping sapconf ...."
+    log "--- "
+    if [[ $profile == "" || $profile != sapconf-* ]]; then
+      log "no active sapconf tuning - profile=$profile -, so nothing to revert"
+      exit 0
+    else
+      echo "$profile" > /var/lib/sapconf/last_profile
+      > /var/lib/sapconf/act_profile
+      case  "$profile" in
+      sapconf-netweaver)
+        log "--- Going to revert netweaver tuning techniques"
+        revert_netweaver
+      ;;
+      sapconf-hana)
+        log "--- Going to revert hana tuning techniques"
+        revert_hana
+      ;;
+      sapconf-ase)
+        log "--- Going to revert ase tuning techniques"
+        revert_ase
+      ;;
+      sapconf-bobj)
+        log "--- Going to revert bobj tuning techniques"
+        revert_bobj
+      ;;
+      esac
+      log "--- Finished reverting tuning parameters"
+    fi
+}
+
+# main
+if [ -f /run/sapconf_during_pkg_inst ]; then
+    # workaround to prevent service reload during preun/postun from a previous
+    # sapconf (with tuned support) package, which gets triggered during package
+    # update of sapconf
+    exit 0
+fi
+
+log "--- /usr/sbin/sapconf called with '$1'"
+(systemctl -q is-enabled tuned || systemctl -q is-active tuned) && log "ATTENTION: tuned service is enabled/active, so we may encounter conflicting tuning values"
+
+if [ "$1" != "status" ]; then
+    # service should fail, if saptune.service is enabled or has exited / save
+    # state files are present
+    # (jsc#SLE-10987 decision)
+    if systemctl -q is-enabled saptune.service 2>/dev/null || [[ $(ls -A /var/lib/saptune/saved_state 2>/dev/null) ]]; then
+        log "ATTENTION: found an active saptune, so refuse any action"
+        exit 1
+    fi
 fi
 
 case "$1" in
-  start|restart|try-restart)
+  #start|restart|try-restart)
+  start)
     # To remain compatible with the original implementation of sapconf,
-    # if neither sap-netweaver nor sap-hana is active, sap-netwever profile
-    # will be activiated via tune daemon.
-    # changed behaviour because of bsc#1026862
-    # activate sap-netwever profile only if no other profile is active
-    echo 'Forwarding action to tuned-adm.'
-    # bsc#1026862
-    #if [[ $(cat /etc/tuned/active_profile) != sap* ]]; then
-    if [[ $(cat /etc/tuned/active_profile) == "" ]]; then
-      profile=$(cat /var/lib/sapconf/last_profile 2> /dev/null)
-      profile=${profile:-sap-netweaver}
-      tuned-adm profile "$profile" &> /dev/null
-    fi
-    if [[ $(cat /etc/tuned/active_profile) != sap-* ]]; then
-      echo 'non-sapconf tuned profile configured. Skipping activation. See man sapconf for details.'
-      exit 1
-    fi
-    if ! systemctl status tuned &> /dev/null; then
-      systemctl start tuned
-    fi
-    systemctl status tuned &> /dev/null && exit 0 || exit 1
+    # if no sapconf related tuning is active, netwever tuning
+    # will be activated.
+    start
   ;;
 
-  reload)
-    if [[ $(cat /etc/tuned/active_profile) == sap-* ]]; then
-      /usr/bin/systemctl restart tuned.service
+  reload|restart|try-restart)
+    if [[ $profile == sapconf-* ]]; then
+      stop; profile=""; start
+    else
+      log "no active sapconf tuning - profile=$profile -, so nothing to $1"
     fi
   ;;
 
   netweaver)
     # This is a new option, an extension to the traditional sapconf.
-    # It activates NetWeaver tuning profile via the tune daemon.
-    echo 'Forwarding action to tuned-adm.'
-    tuned-adm profile sap-netweaver &> /dev/null
-    if ! systemctl status tuned &> /dev/null; then
-      systemctl start tuned
+    # It activates NetWeaver tuning.
+    log "--- Going to apply netweaver tuning techniques"
+    if [[ $profile != "" && $profile != sapconf-netweaver ]]; then
+      log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
+      exit 1
     fi
-    systemctl status tuned &> /dev/null && exit 0 || exit 1
+    profile=${profile:-sapconf-netweaver}
+    echo "$profile" > /var/lib/sapconf/act_profile
+    tune_netweaver
   ;;
 
   hana|b1)
     # This is a new option, an extension to the traditional sapconf.
-    # It activates HANA tuning profile via the tune daemon.
-    echo 'Forwarding action to tuned-adm.'
-    tuned-adm profile sap-hana &> /dev/null
-    if ! systemctl status tuned &> /dev/null; then
-      systemctl start tuned
+    # It activates HANA tuning.
+    log "--- Going to apply hana tuning techniques"
+    if [[ $profile != "" && $profile != sapconf-hana ]]; then
+      log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
+      exit 1
     fi
-    systemctl status tuned &> /dev/null && exit 0 || exit 1
+    profile=${profile:-sapconf-hana}
+    echo "$profile" > /var/lib/sapconf/act_profile
+    tune_hana
   ;;
 
   ase|sybase)
     # This is a new option, an extension to the traditional sapconf.
-    # It activates SAP ASE tuning profile via the tune daemon.
-    echo 'Forwarding action to tuned-adm.'
-    tuned-adm profile sap-ase &> /dev/null
-    if ! systemctl status tuned &> /dev/null; then
-      systemctl start tuned
+    # It activates SAP ASE tuning.
+    log "--- Going to apply ase tuning techniques"
+    if [[ $profile != "" && $profile != sapconf-ase ]]; then
+      log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
+      exit 1
     fi
-    systemctl status tuned &> /dev/null && exit 0 || exit 1
+    profile=${profile:-sapconf-ase}
+    echo "$profile" > /var/lib/sapconf/act_profile
+    tune_ase
   ;;
 
   bobj)
     # This is a new option, an extension to the traditional sapconf.
-    # It activates SAP Business OBJects tuning profile via the tune daemon.
-    echo 'Forwarding action to tuned-adm.'
-    tuned-adm profile sap-bobj &> /dev/null
-    if ! systemctl status tuned &> /dev/null; then
-      systemctl start tuned
+    # It activates SAP Business OBJects tuning.
+    log "--- Going to apply bobj tuning techniques"
+    if [[ $profile != "" && $profile != sapconf-bobj ]]; then
+      log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
+      exit 1
     fi
-    systemctl status tuned &> /dev/null && exit 0 || exit 1
+    profile=${profile:-sapconf-bobj}
+    echo "$profile" > /var/lib/sapconf/act_profile
+    tune_bobj
   ;;
 
   stop)
@@ -117,18 +212,16 @@ case "$1" in
     # changed behaviour because of fate#325363
     # if the current tuned profile is a sapconf profile
     # stop tuned and remove sapconf profile from active tuned profil
-    if [[ $(cat /etc/tuned/active_profile) == sap-* ]]; then
-        /usr/bin/systemctl stop tuned >/dev/null 2>&1
-        cat /etc/tuned/active_profile > /var/lib/sapconf/last_profile
-        > /etc/tuned/active_profile
-        systemctl status tuned &> /dev/null && exit 1
-    fi
-    exit 0
+    # as tuned is removed from sapconf this behavior is slightly adapted
+    stop
   ;;
 
   status)
-    # Tell the status of tune daemon.
-    systemctl status tuned && exit 0 || exit 1
+    # Tell the status of sapconf service
+    if [[ $profile != "" && $(systemctl is-active sapconf >/dev/null 2>&1) ]]; then
+        echo "tuning active for '$profile'"
+    fi
+    systemctl status sapconf --no-pager && exit 0 || exit 1
   ;;
 
   *)
@@ -137,4 +230,3 @@ case "$1" in
   ;;
 
 esac
-

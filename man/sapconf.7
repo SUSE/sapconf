@@ -14,32 +14,36 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "February 2020" "util-linux" "System Administration"
+.TH sapconf 7 "April 2020" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
 .SH DESCRIPTION
 For compatibility reasons the command sapconf(8) exists.
-.\" *But sapconf(8) is deprecated in favour of tune daemon (tuned) and its profiles "sap-netweaver", "sap-hana", "sap-ase", "sap-bobj" bnc#1098352.
 .PP
-The profiles are stored in subdirectories below \fI/usr/lib/tuned\fP. If you need to customize the profiles, you can copy them to \fI/etc/tuned\fP and modify them as you need. It's sufficient to copy the \fItuned.conf\fP file, so you can benefit from package updates of the \fIscript.sh\fP in \fI/usr/lib/tuned\fP.
-.PP
-When loading profiles the files in \fI/etc/tuned\fP takes precedence. In such case you will not lose your customized profiles between tuned or sapconf updates. But be in mind, to get the new behaviour the package update is carrying along, remove the profile copy from \fI/etc/tuned\fP or copy the new profile from \fI/usr/lib/tuned/<profile>\fP to \fI/etc/tuned/<profile>\fP or compare the files in \fI/etc/tuned/<profile>\fP with the files in \fI/usr/lib/tuned/<profile>\fP manually and adjust the content, if needed.
-.PP
-Beside the customization in \fI/etc/tuned\fP the main customization can be done in the central configuration file \fI/etc/sysconfig/sapconf\fP of sapconf.
+sapconf automatically optimises kernel parameters and system configuration for running SAP workloads like NetWeaver, Sybase/ASE, BOBJ and HANA and Business One softwares.
 .br
-All parameters to be set by sapconf are read from this file. 
+sapconf is \fBno longer\fP working on top of the tune daemon.
+
+.SH CONFIGURATION
+The main customization can be done in the central configuration file \fI/etc/sysconfig/sapconf\fP of sapconf.
+.br
+All parameters to be set by sapconf are descibed in detail within this file and will be read from this file.
 .br
 Be in mind: Higher or lower system values set by the system, the SAP installer or by the administrator using sysctl command or sysctl configuration files will be overwritten by sapconf, if they are part of the sapconf sysconfig file.
+.br
+During the package update of sapconf existing former custom tuned profiles related to sapconf in \fI/etc/tuned\fP are preserved in \fI/var/lib/sapconf/saved_configs\fP. Changed parameter values from an existing former custom tuned profile are automatically added to the related sysconfig file.
 .PP
-The process is splitted in 2 scripts. The \fIcommon.sh\fP is inherited by all profiles and \fI<profile>/script.sh\fP will do the whole tuning for the selected profile.
+The process is splitted in 2 scripts. The \fIcommon.sh\fP is inherited by all profiles and \fIprofiles.sh\fP will do the whole tuning for the selected profile.
 .PP
 Every tuning action is logged to \fI/var/log/sapconf.log\fP
 
 .SH ACTIVATION
 To activate a sapconf tuning profile, run as root:
 .PP
-tuned-adm profile <profile>
+/usr/sbin/sapconf <profile>
+.br
+valid values for <profile> are \fInetweaver\fP,\fIhana\fP, \fIb1\fP, \fIase\fP, \fIsybase\fP, \fIbobj\fP. The sapconf internal representation of these values will be stored in \fI/var/lib/sapconf/act_profile\fP.
 .PP
 Make sure that the sapconf service is enabled and running.
 .br
@@ -61,32 +65,32 @@ If the start of the sapconf.service failed, use the command '\fBsystemctl status
 
 If you see the error message:
 .br
-\fBnon-sapconf tuned profile configured. Skipping activation. See man sapconf for details.\fR
+\fBnon-sapconf tuning profile configured. Skipping activation. See man sapconf for details.\fR
 
-please check the active tuned profile by '\fBtuned-adm active\fR' and change it to one of the pre\-defined profiles listed below by '\fBtuned-adm profile <profile>\fR' and then start sapconf.service again.
+please check the active sapconf tuning profile by '\fBcat /var/lib/sapconf/act_profile\fR' and change it to one of the pre\-defined profiles listed below by '\fB/usr/sbin/sapconf <profile>\fR'.
 
 .SH PROFILES
 At the moment we're providing the following pre\-defined profiles:
 .TP
-.BI "sap\-netweaver"
-Tuning profile for SAP NetWeaver. It is the default profile. If the tune daemon does not have any profile active and there is no information about the last used sapconf profile available in \fI/var/lib/sapconf/last_profile\fR, \fBsapconf(8)\fR will activiate SAP NetWeaver tuning profile during start.
-See the man page \fBtuned-profiles-sap-netweaver(7)\fR for details.
+.BI "sapconf\-netweaver"
+Tuning profile for SAP NetWeaver. It is the default profile. If no sapconf profile is active and there is no information about the last used sapconf profile available in \fI/var/lib/sapconf/last_profile\fR, \fBsapconf(8)\fR will activiate SAP NetWeaver tuning profile during start.
+See the man page \fBprofile-sapconf-netweaver(7)\fR for details.
 .br
-To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and NetWeaver workloads. That means the use of the same tuned.conf and script.sh file for both profiles
+To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and NetWeaver workloads. That means the use of the same configuration files and scripts for both profiles
 .PP
 .TP
-.BI "sap\-hana"
-Tuning profile for SAP HANA. See the man page \fBtuned-profiles-sap-hana(7)\fR for details.
+.BI "sapconf\-hana"
+Tuning profile for SAP HANA. See the man page \fBprofile-sapconf-hana(7)\fR for details.
 .br
-To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and NetWeaver workloads. That means the use of the same tuned.conf and script.sh file for both profiles
+To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and NetWeaver workloads. That means the use of the same configuration files and scripts for both profiles
 .PP
 .TP
-.BI "sap\-ase"
-Profile for SAP ASE (Sybase) tuning. See the man page \fBtuned-profiles-sap-ase(7)\fR for details.
+.BI "sapconf\-ase"
+Profile for SAP ASE (Sybase) tuning. See the man page \fBprofile-sapconf-ase(7)\fR for details.
 .PP
 .TP
-.BI "sap\-bobj"
-Profile for SAP Business OBJects (BOBJ) tuning. See the man page \fBtuned-profiles-sap-bobj(7)\fR for details.
+.BI "sapconf\-bobj"
+Profile for SAP Business OBJects (BOBJ) tuning. See the man page \fBprofile-sapconf-bobj(7)\fR for details.
 
 .SH "SAP NOTES"
 All settings are done according to SAP note number 900929, 941735, 1557506, 1771258, 1980196, 1984787, 2031375, 2055470, 2131662, 2205917, 2382421 and 2534844
@@ -106,8 +110,6 @@ service is enabled and started after package installation (see SAP Note 1984787)
 .TP 4
 .BI "sapinit-systemd-compat"
 installation requirement for SLES12GA and SLES12SP1 (see SAP Note 1984787). This package adds the needed drop-in file to the systemd configuration and told the daemon to re-read its configuration.
-.PP
-This information is additionally commented in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR.
 .PP
 Note: These settings are profile independent. They will be applied during the post stage of the sapconf package installation.
 .PP
@@ -131,14 +133,13 @@ Please stop the sysstat service manually, if it is not needed any longer.
 The central configuration file of sapconf is not removed during package removal.
 .PP
 .TP 4
-.BI /etc/tuned/sap\-*
-Private copies of tuned profiles in /etc/tuned are not removed during package removal.
+.BI /var/lib/sapconf/saved_configs
+Private copies of sapconf related former tuned profiles moved from /etc/tuned during the package update are not removed during package removal.
 .PP
 .TP 4
 .BI /var/log/sapconf.log
 The log file of sapconf will not be removed during package removal.
 .PP
-
 
 .SH "FILES"
 .PP
@@ -153,18 +154,34 @@ If you change parameter values please don't forget to reload sapconf service to 
 The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. In some cases the old configuration file is preserved as /etc/sysconfig/sapconf.rpmsave and the new sapconf sysconfig file is copied to /etc/sysconfig/sapconf. Please make sure that you merge needed changes from this file to the new /etc/sysconfig/sapconf file before you restart the sapconf service.
 .RE
 .PP
-\fI/usr/lib/tuned/sap-<profile>/tuned.conf\fR
+\fI/var/lib/sapconf/saved_state/\fR
 .RS 4
-profile special configuration file
+sapconf was designed to preserve the state of the system before starting the SAP specific tuning, so that it will be possible to restore this previous state of the system, if the SAP specific tuning is no longer needed or should be changed.
+
+This system state is saved during the 'start' of the sapconf service in the sapconf internal used files in /var/lib/sapconf/saved_state. The content of these files highly depends on the previous state of the system.
 .br
-A description of the used values can be found at the end of the central configuration file \fI/etc/sysconfig/sapconf\fR
-.br
-The profiles are stored in subdirectories below \fI/usr/lib/tuned\fP. If you need to customize the profiles, you can copy them to \fI/etc/tuned\fP and modify them as you need. When loading profiles with the same name, the /etc/tuned takes precedence. In such case you will not lose your customized profiles between tuned updates.
+If the system was tuned by sapconf, no further monitoring of the system parameters are done, so changes of sapconf relevant parameters will not be observed. If the sapconf service is stopped, then first the values read from the /var/lib/sapconf/saved_state files will be set to the system to restore the previous system state and then the corresponding saved_state file will be removed.
+
+Please do not change or remove files in this directory. The knowledge about the previous system state gets lost and the stop functionality of the sapconf service will be destructed. So you will lose the capability to revert back the tunings sapconf has done.
+.RE
+.PP
+\fI/var/lib/sapconf/saved_configs/\fR
+.RS 4
+Private copies of sapconf related former tuned profiles moved from /etc/tuned during the package update can be found here, if these profile directories were available during the package update. So it's possible to check, if there are custom specific tuning values missing in the current configuration in \fI/etc/sysconfig/sapconf\fR
 .RE
 .PP
 \fI/var/lib/sapconf/last_profile\fR
 .RS 4
 contains the last used sapconf profile. The file will be written during stop of the sapconf service and the content will be used during start of the sapconf service.
+.RE
+.PP
+\fI/var/lib/sapconf/act_profile\fR
+.RS 4
+The file will be written during start of the sapconf service. It contains the current applied profile, if sapconf is active.
+.br
+If sapconf is stopped, this file is empty.
+.br
+Valid profile representations inside this file are: \fBsapconf-netweaver\fR, \fBsapconf-hana\fR, \fBsapconf-ase\fR, \fBsapconf-bobj\fR
 .RE
 .PP
 \fI/var/log/sapconf\.log\fR
@@ -175,12 +192,10 @@ log file of sapconf
 .SH SEE\ ALSO
 .BR sapconf (5)
 .BR sapconf (8)
-.BR tuned (8)
-.BR tuned\-adm (8)
-.BR tuned\-profiles\-sap\-hana(7)
-.BR tuned\-profiles\-sap\-netweaver(7)
-.BR tuned\-profiles\-sap\-ase(7)
-.BR tuned\-profiles\-sap\-bobj(7)
+.BR profiles\-sapconf\-hana(7)
+.BR profiles\-sapconf\-netweaver(7)
+.BR profiles\-sapconf\-ase(7)
+.BR profiles\-sapconf\-bobj(7)
 
 .SH AUTHORS
 .na

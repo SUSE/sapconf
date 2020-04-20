@@ -7,9 +7,9 @@
 ## long behave as designed to or monitor these removed parameters
 ##
 ## This file is sourced in the common (lib/common.sh) and profile special
-## scripts (sap-hana/script.sh, sap-netweaver/script.sh) of the tuned
-## integration of sapconf.
-
+## script (lib/profiles.sh) of sapconf.
+## SCCU2
+##
 # Size of tmpfs mounted on /dev/shm in percent of the virtual memory.
 # Depending on the size of the virtual memory (physical+swap) the
 # value is calculated by (RAM + SWAP) * VSZ_TMPFS_PERCENT/100
@@ -121,8 +121,8 @@ SHMMNI=32768
 # specified at a time. When one sysctl is written it is immediately taken into
 # account to evaluate the dirty memory limits and the other appears as 0 when
 # read.
-# Note: when changing the tuned profile or switching off tuned, both values
-# will be set back to their previous settings.
+# Note: when changing the sapconf profile or switching off (stopping) sapconf,
+# both values will be set back to their previous settings.
 # Note: the minimum value allowed for dirty_bytes is two pages (in bytes); any
 # value lower than this limit will be ignored and the old configuration will be
 # retained.
@@ -142,8 +142,8 @@ DIRTY_BYTES=629145600
 # Only one of them may be specified at a time. When one sysctl is written it is
 # immediately taken into account to evaluate the dirty memory limits and the
 # other appears as 0 when read.
-# Note: when changing the tuned profile or switching off tuned, both values
-# will be set back to their previous settings.
+# Note: when changing the sapconf profile or switching off (stopping) sapconf,
+# both values will be set back to their previous settings.
 #
 # vm.dirty_background_bytes is set to the DIRTY_BG_BYTES value from this file
 #
@@ -209,7 +209,6 @@ KSM=0
 NUMA_BALANCING=0
 
 # /sys/kernel/mm/transparent_hugepage/enabled
-# Intel x86_64 only, not on Power ppc64 (SAP note 2055470)
 #
 # 'never' to disable, 'always' to enable
 # Disable transparent hugepages
@@ -222,7 +221,7 @@ THP=never
 ## Path:           SAP/Note/1557506 - Linux paging improvements
 ## Description:    Tune page cache limit to prevent eviction of SAP applications
 ##                 memory into swap
-## ServiceRestart: tuned
+## ServiceRestart: sapconf
 
 # Consider to enable pagecache limit feature if your SAP workloads cause
 # frequent and excessive swapping activities.
@@ -257,71 +256,89 @@ ENABLE_PAGECACHE_LIMIT="no"
 # Please uncomment the following line and set your preferred value
 #PAGECACHE_LIMIT_IGNORE_DIRTY = ""
 
-
-###############################################################################
-###############################################################################
-###############################################################################
-# The following lines are only for documentation purpose
-# for more information see 'man sapconf'
-#
-# Values set in the configuration file /usr/lib/tuned/<profile>/tuned.conf
-# where <profile> may be sap-hana or sap-netweaver
-# The values are set during start, stop or profile change of tuned.
-#
-
-# [cpu] energy_perf_bias setting
-# performance related setting in tuned.conf
-#
 # Energy Performance Bias EPB (applies to Intel-based systems only)
-# energy_perf_bias: performance - 0, normal - 6, powersave - 15
 #
-# Value is commented out by default
+# we rename the parameter to PERF_BIAS to make a clear distinction to
+# the former used tuned.conf parameter 'energy_perf_bias'
+#
+# PERF_BIAS: performance - 0, normal - 6, powersave - 15
+# or any number between 0 and 15
 #
 # SAP Note 2205917
 #
-#energy_perf_bias = performance
-
-# [cpu] governor setting
-# performance related setting in tuned.conf
+# setting is disabled by default (leave empty)
+# When set, for all cpus the energy performance bias setting will be switched
+# to the chosen value.
+# if activating performance related settings a recommended value for
+# Energy Performance Bias is 'performance' or '0'
 #
+PERF_BIAS=
+
 # CPU Frequency/Voltage scaling (applies to Intel-based systems only)
+#
+# we rename the parameter to GOVERNOR to make a clear distinction to
+# the former used tuned.conf parameter 'governor'
+#
 # The clock frequency and voltage of modern CPUs can scale, in order to save
 # energy when there’s less work to be done. However HANA as a high-performance
 # database benefits from high CPU frequencies.
-# governor: performance - 0, normal - 6, powersave - 15
-#
-# Value is commented out by default
+# governor: performance , powersave
 #
 # SAP Note 2205917
 #
-#governor = performance
+# setting is disabled by default (leave empty)
+# When set, for all cpus the scaling governor setting will be switched to the
+# chosen value.
+# if activating performance related settings a recommended value for
+# governor is 'performance'
+#
+GOVERNOR=
 
-# [cpu] /dev/cpu_dma_frequency setting
-# performance related setting in tuned.conf
+# force latency - configure C-States for lower latency
+# (applies to Intel-based systems only)
 #
-# force latency (applies to Intel-based systems only)
+# we rename the parameter to FORCE_LATENCY to make a clear distinction to
+# the former used tuned.conf parameter 'force_latency'
 #
-# The [cpu] section in tuned.conf dynamically changes the PM QoS CPU DMA latency
-# according to the CPU load. If the CPU load is lower than the value specified
-# by the load_threshold parameter, the latency is set to the value specified by
-# the latency_high parameter, otherwise it is set to value specified by
-# latency_low.
-# To switch off these dynamically changes the latency can be forced to a
-# specific value. This can be accomplished by setting the force_latency
-# parameter to the required latency value.
-# Such a 'static' setting may make the OS more predictable
+# Input is a string, which is internally treated as a decimal (not a
+# hexadecimal) integer number representing a maximum response time in
+# microseconds.
+# It is used to establish a latency upper limit by limiting the use of C-States
+# (CPU idle or CPU latency states) to only those with an exit latency smaller
+# than the value set here. That means only those states that require less than
+# the requested number of microseconds to wake up are enabled, all the other
+# C-States are disabled.
 #
-# Value is set to 70
+# The files /sys/devices/system/cpu/cpu*/cpuidle/state*/latency and
+# /sys/devices/system/cpu/cpu*/cpuidle/state*/disable are used to limit the
+# C-States.
+#
+# When set in the sysconfig file
+# for all available CPUs all CPU latency states with a value read from
+# /sys/devices/system/cpu/cpu*/cpuidle/state*/latency >= (higher than)
+# the value from the sysconfig file are disabled by writing '1' to
+# /sys/devices/system/cpu/cpu*/cpuidle/state*/disable
+#
+# ATTENTION: not idling *at all* increases power consumption significantly and
+# reduces the life span of the machine because of wear and tear. So do not use
+# a too strict latency setting. For SAP HANA workloads a value of '70'
+# microseconds (as a "light sleep") seems to be sufficient. And the impact on
+# power consumption and life of the CPUs is less severe. But don't forget: The
+# deeper the idle state, the larger is the exit latency.
 #
 # SAP Note 2205917
 #
-#force_latency = 70
-
-# [cpu] Intel P-State driver setting
-# performance related setting in tuned.conf
+# if activating performance related settings a recommended value for
+# force latency to start with is 70
 #
-# min_perf_pct (applies to Intel-based systems only and
-#               only if Intel-P-State-Driver is used)
+FORCE_LATENCY=70
+
+# Intel P-State driver setting
+# (applies to Intel-based systems only and only if Intel-P-State-Driver is used)
+#
+# we rename the parameter to MIN_PERF_PCT to make a clear distinction to
+# the former used tuned.conf parameter 'min_perf_pct'
+#
 # The P-State driver provides its own sysfs files to control the P-State
 # selection. These files have been added to /sys/devices/system/cpu/intel_pstate
 # Any changes made to these files are applicable to all CPUs
@@ -329,60 +346,40 @@ ENABLE_PAGECACHE_LIMIT="no"
 # min_perf_pct: Limits the minimum P-State that will be requested by the driver.
 # It states it as a percentage of the max (non-turbo) performance level.
 #
-# Value is commented out by default
-#
 # SAP Note 2205917
 #
-#min_perf_pct = 100
+# setting is disabled by default (leave empty)
+# if activating performance related settings a recommended value for
+# min_perf_pct to start with is 100
+#
+MIN_PERF_PCT=
 
-# [disk] I/O scheduler
+# disk I/O scheduler
 #
-# The default I/O scheduler for SLES is CFQ. It offers satisfactory performance
-# for wide range of I/O task, however choosing an alternative scheduler may
-# potentially yield better latency characteristics and throughput.
-# "noop" is an alternative scheduler, in comparison to CFQ it may offer more
-# consistent performance, lower computation overhead, and potentially higher
-# throughput.
+# we rename the parameter to IO_SCHEDULER to make a clear distinction to
+# the former used tuned.conf parameter 'elevator'
 #
-# For most SAP environments (RAID, storage arrays, virtualizaton) 'noop' is the
-# better choice.
-# Value is set to 'noop'
+# The default I/O scheduler for single-queued block layer devices offers
+# satisfactory performance for wide range of I/O task, however choosing an
+# alternative scheduler may potentially yield better latency characteristics
+# and throughput.
+# "noop" is an alternative scheduler, in comparison to other schedulers it
+# may offer more consistent performance, lower computation overhead, and
+# potentially higher throughput.
+# For most SAP environments (RAID, storage arrays, virtualizaton) 'noop' is
+# the better choice.
+# With the new introduced multi-queue scheduler for block layer devices the
+# recommended I/O scheduler is 'none' as an equivalent to 'noop' for
+# single-queued block layer devices.
 #
-# When set, all block devices on the system will be switched to the chosen
-# scheduler.
+# So IO_SCHEDULER can now contain a list of possible schedulers, separated
+# by blanks, which are checked from left to right. The first one which is
+# available in /sys/block/<device>/queue/scheduler will be used as new
+# scheduler setting for the respective block device.
+#
+# When set, all block devices on the system will be switched to one of the
+# chosen schedulers.
 #
 # SAP Note 1984787
 #
-#elevator = noop
-
-#
-#
-# Requirements and settings during sapconf package installation:
-#
-# sysstat - see SAP Note 1984787
-# package requirement, service is enabled and started during post installation
-# script
-#
-# uuidd - see SAP Note 1984787
-# package requirement, service is enabled and started during post installation
-# script
-#
-# sapinit-systemd-compat - see SAP Note 1984787
-# package requirement, only needed for SLES12GA and SLES12SP1
-#
-# /etc/systemd/logind.conf.d/sap.conf UserTasksMax setting
-# see SAP Note 2205917 and 1984787
-# This file configures a parameter of the systemd login manager
-# It sets the maximum number of OS tasks each user may run concurrently
-# The behaviour of the systemd login manager was changed starting SLES12SP2
-# to prevent fork bomb attacks.
-# No need to set in SLES12SP1.
-#
-# Note: A reboot is needed after the first setup or after setting a new value
-# to get the change take effect.
-# The file will be created during the package installation. The value for
-# UserTasksMax will be set to 'infinity'
-# A message will indicate if a reboot/restart is necessary.
-#
-# SCCU1
-#SAPCONF_END = ""
+IO_SCHEDULER="noop none"
