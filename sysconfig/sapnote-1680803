@@ -72,3 +72,109 @@ NETDEVMAXBACKLOG=30000
 # by the OS, by Default no huge pages are allocated.
 # When enabled, kernel parameter "vm.nr_hugepages" will be raised to 128.
 NUMBER_HUGEPAGES=128
+
+# /sys/kernel/mm/transparent_hugepage/enabled
+# Transparent Huge Pages (THP) on SAP ASE - disable THP
+#
+# 'never' to disable, 'always' to enable
+# Disable transparent hugepages
+# set to 'never'
+THP=never
+
+# Discourage Linux from swapping idle processes to disk (default = 60)
+# value between 20 and 10
+SWAPPINESS=15
+
+# disk readahead
+# queue/read_ahead_kb
+# Defines the maximum number of kilobytes that the operating system may read
+# ahead during a sequential read operation. As a result, the likely-needed
+# information is already present within the kernel page cache for the next
+# sequential read, which improves read I/O performance.
+# Device mappers often benefit from a high read_ahead_kb value.
+# Increasing the read_ahead_kb value might improve performance in environments
+# where sequential reading of large files takes place.
+READAHEAD=4096
+
+# TCP Autotuning setting.
+# net.ipv4.tcp_rmem
+# The next 3 values are used by TCP to regulate receive buffer sizes.
+# They define the size of the TCP socket receive buffer.
+# TCP dynamically adjusts the size of the receive buffer, in the range of
+# these values, depending on memory available in the system.
+#
+# net.ipv4.tcp_rmem = TCPRMEMMIN TCPRMEMDEF TCPRMEMMAX
+
+# The minimum value represents the smallest receive buffer size guaranteed
+# for each TCP socket, even under memory pressure.
+# The default value is the system page size.
+# (On Linux 2.4, the default value is 4 kB, lowered to PAGE_SIZE bytes in
+# low-memory systems.)  This value is used to ensure that in memory pressure
+# mode, allocations below this size will still succeed.
+# This is not used to bound the size of the receive buffer declared using
+# SO_RCVBUF on a socket.
+#
+TCPRMEMMIN=4096
+
+# The default value represents the initial receive buffer size allocated
+# for each TCP socket
+# This value supersedes the initial default buffer size from the generic
+# global net.core.rmem_default defined for all protocols.
+# The default value for this setting is 87380 bytes.
+# (On Linux 2.4, this will be lowered to 43689 in low-memory systems.)
+# To employ large TCP windows, the net.ipv4.tcp_window_scaling must be
+# enabled.(default)
+#
+TCPRMEMDEF=87380
+
+# The maximum value represents the largest receive buffer size that can be
+# automatically selected for each TCP socket.
+# This value does not override the global net.core.rmem_max.
+# The default value for this setting is somewhere between 87380 bytes and
+# 6M bytes based on the amount of memory in the system.
+# It's calculated using the formula
+# max(87380, min(4 MB, tcp_mem[1]*PAGE_SIZE/128))
+# (On Linux 2.4, the default is 87380*2 bytes, lowered to 87380 in low-memory
+# systems).
+#
+TCPRMEMMAX=16777216
+
+# net.ipv4.tcp_wmem
+# The next 3 values are used by TCP to regulate send buffer sizes.
+# They define how much TCP sendbuffer memory space each TCP socket has to use
+# before the buffer is filled up
+# TCP dynamically adjusts the size of the send buffer, in the range of
+# these values, depending on memory available in the system.
+#
+# net.ipv4.tcp_wmem = TCPWMEMMIN TCPWMEMDEF TCPWMEMMAX
+
+# The minimum value represents the smallest send buffer size used by each TCP
+# socket
+# The default value is the system page size.
+# (On Linux 2.4, the default value is 4 kB.)
+# This value is used to ensure that in memory pressure mode, allocations below
+# this size will still succeed.
+# This is not used to bound the size of the send buffer declared using
+# SO_SNDBUF on a socket.
+#
+TCPWMEMMIN=4096
+
+# The default value represents the initial send buffer size allocated
+# for each TCP socket
+# This value supersedes the initial default buffer size from the generic
+# global net.core.wmem_default defined for all protocols.
+# The default value for this setting is 16K bytes.
+# To employ large TCP windows, the net.ipv4.tcp_window_scaling must be
+# enabled - set to a nonzero value (default).
+#
+TCPWMEMDEF=65536
+
+# The maximum value represents the largest send buffer size that can be
+# used by each TCP socket.
+# This value does not override the global net.core.wmem_max.
+# It's calculated using the formula
+# max(65536, min(4 MB, tcp_mem[1]*PAGE_SIZE/128))
+# (On Linux 2.4, the default is 128 kB, lowered to 64 kB in low-memory
+# systems).
+#
+TCPWMEMMAX=16777216

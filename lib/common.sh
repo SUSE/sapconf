@@ -6,7 +6,6 @@
 #   Angela Briel <abriel@suse.com>
 #   Howard Guo <hguo@suse.com>
 
-. /usr/lib/tuned/functions
 cd /usr/lib/sapconf || exit 1
 . util.sh
 
@@ -94,7 +93,7 @@ tune_preparation() {
     if [ "$SEMMSLCUR $SEMMNSCUR $SEMOPMCUR $SEMMNICUR" != "$SEMMSL $SEMMNS $SEMOPM $SEMMNI" ]; then
         save_value kernel.sem "$(sysctl -n kernel.sem)"
         log "Change kernel.sem from '$SEMMSLCUR $SEMMNSCUR $SEMOPMCUR $SEMMNICUR' to '$SEMMSL $SEMMNS $SEMOPM $SEMMNI'"
-        sysctl -w "kernel.sem=$SEMMSL $SEMMNS $SEMOPM $SEMMNI"
+        sysctl -q -w "kernel.sem=$SEMMSL $SEMMNS $SEMOPM $SEMMNI"
     else
         log "Leaving kernel.sem unchanged at '$SEMMSLCUR $SEMMNSCUR $SEMOPMCUR $SEMMNICUR'"
     fi
@@ -119,31 +118,37 @@ tune_preparation() {
         done
     done
 
+    # set block device scheduler
+    set_scheduler
+
     log "--- Finished application of universal tuning techniques"
 }
 
 # revert_preparation reverts tuning operations conducted by "1275776 - Preparing SLES for SAP" and "1984787 - Installation notes".
 revert_preparation() {
-    log "--- Going to revert universally tuned parameters"
+    log "--- Going to revert universally sapconf tuning parameters"
     # Restore tuned kernel parameters
     SHMMAX=$(restore_value kernel.shmmax)
-    [ "$SHMMAX" ] && log "Restoring kernel.shmmax=$SHMMAX" && sysctl -w kernel.shmmax="$SHMMAX"
-
+    [ "$SHMMAX" ] && log "Restoring kernel.shmmax=$SHMMAX" && sysctl -q -w kernel.shmmax="$SHMMAX"
 
     SHMALL=$(restore_value kernel.shmall)
-    [ "$SHMALL" ] && log "Restoring kernel.shmall=$SHMALL" && sysctl -w kernel.shmall="$SHMALL"
+    [ "$SHMALL" ] && log "Restoring kernel.shmall=$SHMALL" && sysctl -q -w kernel.shmall="$SHMALL"
 
     SEM=$(restore_value kernel.sem)
-    [ "$SEM" ] && log "Restoring kernel.sem=$SEM" && sysctl -w kernel.sem="$SEM"
+    [ "$SEM" ] && log "Restoring kernel.sem=$SEM" && sysctl -q -w kernel.sem="$SEM"
 
     MAX_MAP_COUNT=$(restore_value vm.max_map_count)
-    [ "$MAX_MAP_COUNT" ] && log "Restoring vm.max_map_count=$MAX_MAP_COUNT" && sysctl -w vm.max_map_count="$MAX_MAP_COUNT"
+    [ "$MAX_MAP_COUNT" ] && log "Restoring vm.max_map_count=$MAX_MAP_COUNT" && sysctl -q -w vm.max_map_count="$MAX_MAP_COUNT"
 
     # Restore the size of tmpfs
     TMPFS_SIZE=$(restore_value tmpfs.size)
     TMPFS_OPTS=$(restore_value tmpfs.mount_opts)
     [ "$TMPFS_SIZE" ] && [ -e /dev/shm ] && mount -o "remount,${TMPFS_OPTS},size=${TMPFS_SIZE}k" /dev/shm
-    log "--- Finished reverting universally tuned parameters"
+
+    # Restore block device scheduler
+    restore_scheduler
+
+    log "--- Finished reverting universally sapconf tuning parameters"
 }
 
 # tune_page_cache_limit optimises page cache limit according to recommendation in "1557506 - Linux paging improvements".
@@ -157,6 +162,9 @@ tune_page_cache_limit() {
     # The configuration file should overwrite the three parameters above
     if [ -r /etc/sysconfig/sapconf ]; then
         source_sysconfig /etc/sysconfig/sapconf
+    else
+        log 'Failed to read /etc/sysconfig/sapconf'
+        exit 1
     fi
     if [ "$ENABLE_PAGECACHE_LIMIT" = "yes" ]; then
         if [ -z "$PAGECACHE_LIMIT_MB" ]; then
@@ -166,7 +174,7 @@ tune_page_cache_limit() {
         fi
         save_value vm.pagecache_limit_mb "$(sysctl -n vm.pagecache_limit_mb)"
         log "Setting vm.pagecache_limit_mb=$PAGECACHE_LIMIT_MB"
-        sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT_MB"
+        sysctl -q -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT_MB"
         if [ -z "$PAGECACHE_LIMIT_IGNORE_DIRTY" ]; then
                 log "ATTENTION: PAGECACHE_LIMIT_IGNORE_DIRTY not set in sysconfig file."
                 log "Setting system default '0'"
@@ -175,12 +183,12 @@ tune_page_cache_limit() {
         # Set ignore_dirty
         save_value vm.pagecache_limit_ignore_dirty "$(sysctl -n vm.pagecache_limit_ignore_dirty)"
         log "Setting vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
-        sysctl -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
+        sysctl -q -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
     else
         # Disable pagecache limit by setting it to 0
         save_value vm.pagecache_limit_mb "$(sysctl -n vm.pagecache_limit_mb)"
         log "Disabling page cache limit"
-        sysctl -w "vm.pagecache_limit_mb=0"
+        sysctl -q -w "vm.pagecache_limit_mb=0"
     fi
     log "--- Finished application of page cache limit"
 }
@@ -190,9 +198,9 @@ revert_page_cache_limit() {
     log "--- Going to revert page cache limit"
     # Restore pagecache settings
     PAGECACHE_LIMIT=$(restore_value vm.pagecache_limit_mb)
-    [ "$PAGECACHE_LIMIT" ] && log "Restoring vm.pagecache_limit_mb=$PAGECACHE_LIMIT" && sysctl -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT"
+    [ "$PAGECACHE_LIMIT" ] && log "Restoring vm.pagecache_limit_mb=$PAGECACHE_LIMIT" && sysctl -q -w "vm.pagecache_limit_mb=$PAGECACHE_LIMIT"
     PAGECACHE_LIMIT_IGNORE_DIRTY=$(restore_value vm.pagecache_limit_ignore_dirty)
-    [ "$PAGECACHE_LIMIT_IGNORE_DIRTY" ] && log "Restoring vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY" && sysctl -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
+    [ "$PAGECACHE_LIMIT_IGNORE_DIRTY" ] && log "Restoring vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY" && sysctl -q -w "vm.pagecache_limit_ignore_dirty=$PAGECACHE_LIMIT_IGNORE_DIRTY"
     log "--- Finished reverting page cache limit"
 }
 
@@ -210,5 +218,5 @@ tune_uuidd_socket() {
 # revert_shmmni reverts kernel.shmmni value to previous state.
 revert_shmmni() {
     SHMMNI=$(restore_value kernel.shmmni)
-    [ "$SHMMNI" ] && log "Restoring kernel.shmmni=$SHMMNI" && sysctl -w "kernel.shmmni=$SHMMNI"
+    [ "$SHMMNI" ] && log "Restoring kernel.shmmni=$SHMMNI" && sysctl -q -w "kernel.shmmni=$SHMMNI"
 }
