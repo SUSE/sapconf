@@ -83,10 +83,10 @@ SAP Note 941735, HANA Administration Guide
 .RS 4
 Maximum number of open files for SAP application groups sapsys, sdba, and dba.
 Consult with manual page limits.conf(5) for the correct syntax.
-.br
-There is no rollback during revert (stop of sapconf service.)
 .PP
-Limit settings in \fB/etc/security/limits.conf\fP during the common part (tune_preparation) of the scripting
+Limit settings in \fB/etc/security/limits.d/sapconf-nofile.conf\fP during the common part (tune_preparation) of the scripting
+.br
+This file will be removed during revert (change of tuning profile or stop of sapconf service.) and during the sapconf package removal.
 .br
 SAP Note 1771258
 .RE
