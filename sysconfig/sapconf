@@ -73,7 +73,7 @@ SEMOPM=500
 #
 SEMMNI=32000
 
-# /etc/security/limits.conf
+# /etc/security/limits.d/sapconf-nofile.conf
 ## Type:        regexp(^@(sapsys|sdba|dba)[[:space:]]+(-|hard|soft)[[:space:]]+(nofile)[[:space:]]+[[:digit:]]+)
 #
 # Maximum number of open files for SAP application groups sapsys, sdba, and dba.
