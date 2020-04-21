@@ -2,7 +2,12 @@
 
 # shellcheck disable=SC1090,SC1091
 
-# util.sh provides utility functions to assist in calculating and applying tuned parameters
+# util.sh provides utility functions to assist in calculating and applying sapconf tuning parameters
+
+STORE=/var/lib/sapconf/saved_state
+STORE_SUFFIX=".save"
+
+[ ! -d "$STORE" ] && mkdir -p "$STORE"
 
 # math invokes arbitrary precision calculator "bc" to work on a formula, and then returns the result.
 math() {
@@ -36,7 +41,7 @@ increase_sysctl() {
     declare -r current_val=$cur_val
     if [ "$(math_test "$current_val < $new_val")" ]; then
         log "Increasing $param from $current_val to $new_val"
-        sysctl -w "$param=$new_val"
+        sysctl -q -w "$param=$new_val"
         echo -n "$new_val"
     else
         if [ "$(math_test "$current_val > $new_val")" ]; then
@@ -95,13 +100,48 @@ chk_and_set_conf_val() {
     else
         if [ "$(math_test "$current_val < $val2set")" ]; then
             log "Increasing $param from $current_val to $val2set"
-            sysctl -w "$param=$val2set"
+            sysctl -q -w "$param=$val2set"
         elif [ "$(math_test "$current_val > $val2set")" ]; then
             log "Decreasing $param from $current_val to $val2set"
-            sysctl -w "$param=$val2set"
+            sysctl -q -w "$param=$val2set"
         else
             log "Leaving $param unchanged at $current_val"
         fi
+    fi
+}
+
+# for parameters defined in /sys or /proc fs
+# check, if a value is defined in the (sourced) sysconfig file
+# if not, log a warning and leave the current system value unchanged
+# otherwise save the old value and set the value from sysconfig file
+# as the new system value
+#
+# save_and_set_sys_val param sysfile
+# example:
+# save_and_set_sys_val ksm /sys/kernel/mm/ksm/run
+#
+# param is the parameter name in the /sys or /proc fs and is used as
+# filename to store the old state
+# it's in lowercase letter, with uppercase letters it's the parameter
+# found in the sysconfig file of sapconf
+#
+# sysfile is the name of the file in the /sys or /proc fs
+#
+# example:
+# param=ksm, sysfile=/sys/kernel/mm/ksm/run, and KSM in sysconfig
+save_and_set_sys_val() {
+    declare -r param=$1
+    declare -r sysfile=$2
+
+    [[ ! -f $sysfile ]] && log "Can't set parameter $param, because file $sysfile does not exist." && return 0
+    current_val=$(cat "$sysfile")
+    new_val=$(chk_conf_val "${param^^}" "$current_val")
+    if [ "$current_val" != "$new_val" ]; then
+        save_value "$param" "$current_val"
+        log "Change $param from $current_val to $new_val"
+        echo "$new_val" > "$sysfile"
+    else
+        log "Leaving $param unchanged at $current_val"
     fi
 }
 
@@ -120,4 +160,249 @@ source_sysconfig() {
         source "$TMPSAPCONF"
         rm -f "$TMPSAPCONF"
     fi
+}
+
+# Save value
+# $0 parameter_name value
+save_value() {
+    echo "$2" > "$STORE/${1}$STORE_SUFFIX"
+}
+
+# Restore value from store
+# $0 parameter_name
+restore_value() {
+    [ -r "$STORE/${1}$STORE_SUFFIX" ] && res_val=$(cat "$STORE/${1}$STORE_SUFFIX")
+    rm -f "$STORE/${1}$STORE_SUFFIX" >/dev/null 2>&1
+    echo "$res_val"
+}
+
+# get active sysfs value
+# $0 sysfs_filename
+get_sys_val() {
+        [ -f "$1" ] && sed 's/.*\[\(.*\)\].*/\1/' "$1"
+}
+
+# check for valid scheduler setting in parameter IO_SCHEDULER
+is_valid_scheduler() {
+    bdev=$1
+    avail_scheds=$(sed -e 's|\[||g' -e 's|\]||g' /sys/block/"$bdev"/queue/scheduler)
+    for sched in $IO_SCHEDULER; do
+        for s in $avail_scheds; do
+            if [ "$sched" == "$s" ]; then
+                log "using '$sched' as new scheduler for block device '/sys/block/$bdev'."
+                echo "$sched"
+                return 0
+            fi
+        done
+        log "'$sched' is not a valid scheduler for block device '/sys/block/$bdev', skipping."
+    done
+    # no valid scheduler found in config file
+    return 1
+}
+
+# set block device scheduler
+set_scheduler() {
+    if [ -z "$IO_SCHEDULER" ]; then
+        log "ATTENTION: 'IO_SCHEDULER' not set in sysconfig file."
+        log "Leaving block device scheduler settings unchanged"
+        return 0
+    fi
+    # read block devices from /sys/block
+    #for i in $(eval LANG=C ls -1 /sys/block 2>/dev/null); do
+    for i in /sys/block/*; do
+        dev=${i##*/}
+        # check block device type.
+	[ ! -f /sys/block/"$dev"/device/type ] && continue
+        [[ $(cat /sys/block/"$dev"/device/type) -ne 0 ]] && continue
+        # Only set scheduler for TYPE_DISK / 0x00
+        # check, if IO_SCHEDULER includes a valid scheduler
+        # use the first valid scheduler as new scheduler
+        if ! new_sched=$(is_valid_scheduler "$dev"); then
+            log "sysconfig file does not contain a valid scheduler for block device '/sys/block/$dev'"
+            continue
+        fi
+        # read current scheduler value from /sys/block/*/queue/scheduler
+        #[[ -f /sys/block/"$dev"/queue/scheduler ]] && cur_val=$(sed 's/.*\[\(.*\)\].*/\1/' /sys/block/"$dev"/queue/scheduler)
+	[ -f /sys/block/"$dev"/queue/scheduler ] && cur_val=$(get_sys_val /sys/block/"$dev"/queue/scheduler)
+        if [ "$cur_val" != "$new_sched" ]; then
+            [ -n "$cur_val" ] && save_value IO_SCHEDULER_"$dev" "$cur_val"
+            [ -n "$new_sched" ] && log "Change IO scheduler for block device '$dev' from '$cur_val' to '$new_sched'" && echo "$new_sched" > /sys/block/"$dev"/queue/scheduler
+        else
+            log "Leaving scheduler for block device '/sys/block/$dev' unchanged at '$cur_val'"
+        fi
+    done
+}
+
+# restore saved values for block device scheduler
+restore_scheduler() {
+    # read block devices from /sys/block
+    #for i in $(eval LANG=C ls -1 /sys/block 2>/dev/null); do
+    for i in /sys/block/*; do
+        dev=${i##*/}
+        old_sched=$(restore_value IO_SCHEDULER_"$dev")
+        [ -n "$old_sched" ] && log "Restoring scheduler '$old_sched' for block device '/sys/block/$dev'" && echo "$old_sched" > /sys/block/"$dev"/queue/scheduler
+    done
+}
+
+# configure C-States for lower latency
+# adjust latency settings - disable cpu idle states
+set_force_latency() {
+    [[ $(uname -m) != "x86_64" ]] && log "latency settings are only relevant for Intel-based systems." && return 0
+
+    if [ -z "$FORCE_LATENCY" ]; then
+        log "'FORCE_LATENCY' not set in sysconfig file."
+        log "Leaving latency settings untouched"
+        return 0
+    fi
+
+    # read /sys/devices/system/cpu/cpu*
+    for cpu_path in /sys/devices/system/cpu/cpu[0-9]*; do
+        cpu="${cpu_path##*/}"
+        [[ ! -d $cpu_path/cpuidle ]] && log "idle settings not supported for cpu '$cpu'" && continue
+        # /sys/devices/system/cpu/cpu*/cpuidle/state*
+        for cstate_path in "$cpu_path"/cpuidle/state*; do
+            cstate="${cstate_path##*/}"
+            # read /sys/devices/system/cpu/cpu*/cpuidle/state*/disable
+            old_state=$(cat "$cstate_path"/disable)
+            # save_state filename cpu0_state0.save, cpu0_state1.save, ..
+            save_value "${cpu}"_"${cstate}" "$old_state"
+            # read /sys/devices/system/cpu/cpu*/cpuidle/state*/latency
+            latency=$(cat "$cstate_path"/latency)
+            if [ "$latency" -ge "$FORCE_LATENCY" ]; then
+                # set new latency states
+                log "Disable idle state for cpu '${cpu}' and state '${cstate}'"
+                echo 1 > "$cstate_path"/disable
+            fi
+            if [[ $latency -lt $FORCE_LATENCY && $old_state -eq 1 ]]; then
+                # reset previous set latency state
+                log "Enable idle state for cpu '${cpu}' and state '${cstate}'"
+                echo 0 > "$cstate_path"/disable
+            fi
+        done
+    done
+}
+
+# restore saved values for latency settings - restore cpu idle states
+restore_force_latency() {
+    # read /sys/devices/system/cpu/cpu*
+    for cpu_path in /sys/devices/system/cpu/cpu[0-9]*; do
+        cpu="${cpu_path##*/}"
+        [[ ! -d $cpu_path/cpuidle ]] && log "idle settings not supported for cpu '$cpu'" && continue
+        # /sys/devices/system/cpu/cpu*/cpuidle/state*
+        for cstate_path in "$cpu_path"/cpuidle/state*; do
+            cstate="${cstate_path##*/}"
+            # restore from file cpu0_state0.save, cpu0_state1.save, ..
+            old_state=$(restore_value "${cpu}"_"${cstate}")
+            [ -n "$old_state" ] && log "Restoring idle state '$old_state' for cpu '${cpu}' and state '${cstate}'" && echo "$old_state" > "$cstate_path"/disable
+        done
+    done
+}
+
+# get current energy_perf_bias values of all cpus
+get_perf_bias() {
+    /usr/bin/cpupower -c all info -b | awk '
+        /^analyzing CPU/ {
+        cpu_nr=substr($3, 1, length($3)-1)
+        getline
+        if ( $0 ~ /^perf-bias:/ ) {
+            perf=$2
+        }
+        printf("cpu_%s %s\n", cpu_nr, perf)
+    }'
+}
+
+# set the energy_perf_bias values of all cpus to the 'PERF_BIAS' value from
+# the sysconfig file
+set_perf_bias() {
+    [[ $(uname -m) != "x86_64" ]] && log "energy_perf_bias settings are only relevant for Intel-based systems." && return 0
+
+    if [ -z "$PERF_BIAS" ]; then
+        log "'PERF_BIAS' not set in sysconfig file."
+        log "Leaving energy_perf_bias settings untouched"
+        return 0
+    fi
+
+    case "$PERF_BIAS" in
+    "performance")
+        PERF_BIAS=0
+        ;;
+    "normal")
+        PERF_BIAS=6
+        ;;
+    "powersave")
+        PERF_BIAS=15
+        ;;
+    esac
+    [[ "$PERF_BIAS" -lt 0 || "$PERF_BIAS" -gt 15 ]] && log "wrong 'PERF_BIAS' setting. Value '$PERF_BIAS' out of scope, leaving energy_perf_bias settings unchanged" && return 0
+
+    [[ ! -x /usr/bin/cpupower ]] && log "command '/usr/bin/cpupower' not found. System does not support Intel's performance bias setting" && return 0
+    /usr/bin/cpupower info -b > /tmp/sapconf-cpupower-test
+    if grep "System does not support Intel's performance bias setting" /tmp/sapconf-cpupower-test >/dev/null 2>&1; then
+        rm -f /tmp/sapconf-cpupower-test
+        log "System does not support Intel's performance bias setting"
+        return 0
+    fi
+    rm -f /tmp/sapconf-cpupower-test
+    get_perf_bias | while read -r c p; do
+        save_value "$c" "$p"
+    done
+    log "Set energy_perf_bias value for all cpus to '$PERF_BIAS'"
+    /usr/bin/cpupower -c all set -b "$PERF_BIAS"
+}
+
+# restore the energy_perf_bias setting of all cpus
+restore_perf_bias() {
+    get_perf_bias | while read -r c p; do
+        cpu="${c##cpu_}"
+        old_perf_bias=$(restore_value "$c")
+        [ -n "$old_perf_bias" ] && log "Restoring energy_perf_bias value '$old_perf_bias' for cpu '${cpu}'" && /usr/bin/cpupower -c "$cpu" set -b "$old_perf_bias"
+    done
+}
+
+# set cpu scaling governor setting and store the old settings
+set_governor() {
+    [[ $(uname -m) != "x86_64" ]] && log "scaling governor settings are only relevant for Intel-based systems." && return 0
+
+    if [ -z "$GOVERNOR" ]; then
+        log "'GOVERNOR' not set in sysconfig file."
+        log "Leaving scaling governor settings untouched"
+        return 0
+    fi
+
+    [[ ! -x /usr/bin/cpupower ]] && log "command '/usr/bin/cpupower' not found. System does not support Intel's performance setting" && return 0
+
+    for cpu_path in /sys/devices/system/cpu/cpu[0-9]*; do
+        cpu="${cpu_path##*/}"
+        [[ ! -f $cpu_path/cpufreq/scaling_governor ]] && log "cpu '$cpu' does not support a scaling governor. Skipping...." && continue
+        if ! grep "$GOVERNOR" "$cpu_path"/cpufreq/scaling_available_governors >/dev/null 2>&1; then
+            log "'$GOVERNOR' is not a valid governor for cpu '$cpu', skipping."
+            continue
+        fi
+        # /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor
+        old_gov=$(cat "$cpu_path"/cpufreq/scaling_governor)
+        if [ "$old_gov" != "$GOVERNOR" ]; then
+            save_value "${cpu}_gov" "$old_gov"
+            cpu_nr="${cpu##cpu_}"
+            log "Set scaling governor for cpu '${cpu}' to '$GOVERNOR'"
+            if [ -x /usr/bin/cpupower ]; then
+                /usr/bin/cpupower -c "${cpu_nr}" frequency-set -g "$GOVERNOR"
+            else
+                log "command '/usr/bin/cpupower' not found. Falling back to direct change the file for scaling governor setting"
+                echo "$GOVERNOR" > "$cpu_path"/cpufreq/scaling_governor
+            fi
+        else
+            log "Leaving scaling governor for cpu '${cpu}' unchanged at '$old_gov'"
+        fi
+    done
+}
+
+# re-enable previous CPU governor settings
+restore_governor() {
+    # read /sys/devices/system/cpu/cpu*
+    for cpu_path in /sys/devices/system/cpu/cpu[0-9]*; do
+        cpu="${cpu_path##*/}"
+        cpu_nr="${cpu##cpu_}"
+        old_gov=$(restore_value "${cpu}_gov")
+        [ -n "$old_gov" ] && log "Restoring scaling governor '$old_gov' for cpu '${cpu}'" && /usr/bin/cpupower -c "${cpu_nr}" frequency-set -g "$old_gov"
+    done
 }

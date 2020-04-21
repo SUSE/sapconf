@@ -23,7 +23,7 @@ This man page documents format and content of the central configuration file of 
 .br
 The \fI/etc/sysconfig/sapconf\fR file uses the sysconfig\-file format.
 .br
-The file consists of 3 parts. The first part contains all parameters that can be set for the system tuning profiles of sapconf(7) using the configuration file /etc/sysconfig/sapconf. The second and third one is only for documentation purpose.
+The file contains all parameters that can be set for the system tuning of sapconf(7).
 .PP
 In the file you can find the actual recommended value, the source SAP Note, a short explanation and where this parameter is set.
 .br
@@ -31,7 +31,7 @@ If you change parameter values please don't forget to restart sapconf service to
 .PP
 The package installation of sapconf will have regard for changes made to /etc/sysconfig/sapconf. In some cases the old configuration file is preserved as /etc/sysconfig/sapconf.rpmsave and the new sapconf sysconfig file is copied to /etc/sysconfig/sapconf. Please make sure that you merge needed changes from this file to the new /etc/sysconfig/sapconf file before you restart the sapconf service.
 
-.SH DESCRIPTION OF PART 1
+.SH DESCRIPTION OF THE PARAMETERS
 .PP
 .TP 4
 .BI VSZ_TMPFS_PERCENT=75
@@ -84,7 +84,7 @@ SAP Note 941735, HANA Administration Guide
 Maximum number of open files for SAP application groups sapsys, sdba, and dba.
 Consult with manual page limits.conf(5) for the correct syntax.
 .br
-There is no rollback during revert (change of tuned profile or stop of sapconf service.)
+There is no rollback during revert (stop of sapconf service.)
 .PP
 Limit settings in \fB/etc/security/limits.conf\fP during the common part (tune_preparation) of the scripting
 .br
@@ -114,7 +114,7 @@ The value is the maximum number of shared memory identifies available in the sys
 \fBkernel.shmmni\fP is set to the SHMMNI value from this file
 .PP
 .RS 4
-Linux kernel setting, set in the profile specific part of the scripting
+Linux kernel setting, set in the SAP tuning part of the scripting
 .br
 SAP Note 2534844, HANA Administration Guide
 .RE
@@ -125,14 +125,14 @@ Contains the amount of dirty memory at which a process generating disk writes wi
 .br
 Note: \fBvm.dirty_bytes\fP is the counterpart of \fBvm.dirty_ratio\fP. Only one of them may be specified at a time. When one sysctl is written it is immediately taken into account to evaluate the dirty memory limits and the other appears as 0 when read.
 .br
-Note: when changing the tuned profile or switching off tuned, both values will be set back to their previous settings.
+Note: when stopping sapconf service, both values will be set back to their previous settings.
 .br
 Note: the minimum value allowed for dirty_bytes is two pages (in bytes); any value lower than this limit will be ignored and the old configuration will be retained.
 .br
 \fBvm.dirty_bytes\fP is set to the DIRTY_BYTES value from this file
 .PP
 .RS 4
-Memory Management setting in the profile specific part of the scripting
+Memory Management setting in the SAP tuning part of the scripting
 .br
 SAP Note 2578899
 .RE
@@ -143,12 +143,12 @@ Contains the amount of dirty memory at which the background kernel flusher threa
 .br
 Note: \fBvm.dirty_background_bytes\fP is the counterpart of \fBvm.dirty_background_ratio\fP.  Only one of them may be specified at a time. When one sysctl is written it is immediately taken into account to evaluate the dirty memory limits and the other appears as 0 when read.
 .br
-Note: when changing the tuned profile or switching off tuned, both values will be set back to their previous settings.
+Note: when stopping sapconf service, both values will be set back to their previous settings.
 .br
 \fBvm.dirty_background_bytes\fP is set to the DIRTY_BG_BYTES value from this file
 .PP
 .RS 4
-Memory Management setting in the profile specific part of the scripting
+Memory Management setting in the SAP tuning part of the scripting
 .br
 SAP Note 2578899
 .RE
@@ -160,7 +160,7 @@ If enabled (=1), provide RFC 2861 behavior and time out the congestion window af
 This value is important for large ScaleOut HANA clusters and HANA2 in general. So disable TCP slow start on idle connections
 .PP
 .RS 4
-IO related setting \fBnet.ipv4.tcp_slow_start_after_idle\fP during the profile specific part of the scripting
+IO related setting \fBnet.ipv4.tcp_slow_start_after_idle\fP during the SAP tuning part of the scripting
 .br
 SAP Note 2382421
 .RE
@@ -170,7 +170,7 @@ SAP Note 2382421
 Kernel Samepage Merging (KSM). KSM allows for an application to register with the kernel so as to have its memory pages merged with other processes that also register to have their pages merged. For KVM the KSM mechanism allows for guest virtual machines to share pages with each other. In todays environment where many of the guest operating systems like XEN, KVM are similar and are running on same host machine, this can result in significant memory savings. Default value is 0.
 .PP
 .RS 4
-Set in \fB/sys/kernel/mm/ksm/run\fP during the profile specific part of the scripting
+Set in \fB/sys/kernel/mm/ksm/run\fP during the SAP tuning part of the scripting
 .br
 SAP Note 2684254
 .RE
@@ -182,19 +182,19 @@ Enables/disables automatic page fault based NUMA memory balancing. Memory is mov
 Turn off autoNUMA balancing. 0 to disable, 1 to enable
 .PP
 .RS 4
-Set in \fB/proc/sys/kernel/numa_balancing\fP during the profile specific part of the scripting
+Set in \fB/proc/sys/kernel/numa_balancing\fP during the SAP tuning part of the scripting
 .br
 SAP Note 2684254
 .RE
 .PP
 .TP 4
 .BI THP=never
-Disable transparent hugepages. Intel x86_64 only, not on Power ppc64 (see SAP note 2055470).
+Disable transparent hugepages.
 .br
 Set to 'never' to disable or to 'always' to enable.
 .PP
 .RS 4
-Set in \fB/sys/kernel/mm/transparent_hugepage/enabled\fP during the profile specific part of the scripting
+Set in \fB/sys/kernel/mm/transparent_hugepage/enabled\fP during the SAP tuning part of the scripting
 .br
 SAP Note 2131662, 2684254, 2031375
 .RE
@@ -203,116 +203,122 @@ SAP Note 2131662, 2684254, 2031375
 .BI "Linux paging improvements"
 no longer supported since SLE15.
 .PP
-.SH DESCRIPTION OF PART 2
-The parameters of the second part of the configuration file are not changeable in /etc/sysconfig/sapconf. They are part of this file for documentation purpose only.
-.PP
-These values are set in the configuration file \fB/usr/lib/tuned/<profile>/tuned.conf\fP, where <profile> is sapconf. See sapconf(7) for details how to change values from these configuration files.
-.PP
 .TP 4
-.BI "#energy_perf_bias = performance"
+.BI PERF_BIAS=
 Energy Performance Bias EPB (applies to Intel-based systems only)
 .br
-[cpu] energy_perf_bias setting - performance related setting in tuned.conf
+We renamed the parameter to PERF_BIAS to make a clear distinction to the former used tuned.conf parameter 'energy_perf_bias'
+
+PERF_BIAS: performance - 0, normal - 6, powersave - 15
+.br or any number between 0 and 15
 .br
-energy_perf_bias: performance - 0, normal - 6, powersave - 15
+The setting is disabled by default (leave empty)
 .br
-The value is commented out by default
+When set, for all cpus the energy performance bias setting will be switched to the chosen value.
+.br
+If activating performance related settings a recommended value for Energy Performance Bias is 'performance' or '0'
 .PP
 .RS 4
-Set during start, stop or profile change of tuned.
+Set during the performance setting part of the scripting
 .br
 SAP Note 2684254
 .RE
 .PP
 .TP 4
-.BI "#governor = performance"
+.BI GOVERNOR=
 CPU Frequency/Voltage scaling (applies to Intel-based systems only)
 .br
+We renamed the parameter to GOVERNOR to make a clear distinction to the former used tuned.conf parameter 'governor'
+
 The clock frequency and voltage of modern CPUs can scale, in order to save energy when there’s less work to be done. However HANA as a high-performance database benefits from high CPU frequencies.
-.br
-[cpu] governor setting - performance related setting in tuned.conf
 .br
 governor: performance - 0, normal - 6, powersave - 15
 .br
-The value is commented out by default
+The setting is disabled by default (leave empty)
+.br
+When set, for all cpus the scaling governor setting will be switched to the chosen value.
+.br
+If activating performance related settings a recommended value for governor is 'performance' or '0'
 .PP
 .RS 4
-Set during start, stop or profile change of tuned.
+Set during the performance setting part of the scripting
 .br
 SAP Note 2684254
 .RE
 .PP
 .TP 4
-.BI "force_latency = 70"
-force latency (applies to Intel-based systems only)
+.BI FORCE_LATENCY=70
+force latency - configure C-States for lower latency
 .br
-The [cpu] section in tuned.conf dynamically changes the PM QoS CPU DMA latency according to the CPU load. If the CPU load is lower than the value specified by the load_threshold parameter, the latency is set to the value specified by the latency_high parameter, otherwise it is set to value specified by latency_low.
+(applies to Intel-based systems only)
 .br
-To switch off these dynamically changes the latency can be forced to a specific value. This can be accomplished by setting the force_latency parameter to the required latency value. Such a 'static' setting may make the OS more predictable
+We renamed the parameter to FORCE_LATENCY to make a clear distinction to the former used tuned.conf parameter 'force_latency'
+
+Input is a string, which is internally treated as a decimal (not a hexadecimal) integer number representing a maximum response time in microseconds.
 .br
-[cpu] /dev/cpu_dma_frequency setting - performance related setting in tuned.conf
+It is used to establish a latency upper limit by limiting the use of C-States (CPU idle or CPU latency states) to only those with an exit latency smaller than the value set here. That means only those states that require less than the requested number of microseconds to wake up are enabled, all the other C-States are disabled.
+
+The files /sys/devices/system/cpu/cpu*/cpuidle/state*/latency and /sys/devices/system/cpu/cpu*/cpuidle/state*/disable are used to limit the C-States.
+
+When set in the sysconfig file for all available CPUs all CPU latency states with a value read from /sys/devices/system/cpu/cpu*/cpuidle/state*/latency >= (higher than) the value from the sysconfig file are disabled by writing '1' to /sys/devices/system/cpu/cpu*/cpuidle/state*/disable
+
+ATTENTION:
+.br
+not idling *at all* increases power consumption significantly and reduces the life span of the machine because of wear and tear. So do not use a too strict latency setting. For SAP HANA workloads a value of '70' microseconds (as a "light sleep") seems to be sufficient. And the impact on power consumption and life of the CPUs is less severe. But don't forget: The deeper the idle state, the larger is the exit latency.
+
+If activating performance related settings a recommended value for force latency to start with is 70
 .PP
 .RS 4
-Set during start, stop or profile change of tuned.
+Set during the performance setting part of the scripting
 .br
 SAP Note 2684254
 .RE
 .PP
 .TP 4
-.BI "#min_perf_pct = 100"
-min_perf_pct (applies to Intel-based systems only and only if Intel-P-State-Driver is used)
+.BI MIN_PERF_PCT=
+Intel P-State driver setting
 .br
+(applies to Intel-based systems only and only if Intel-P-State-Driver is used)
+.br
+We renamed the parameter to MIN_PERF_PCT to make a clear distinction to the former used tuned.conf parameter 'min_perf_pct'
+
 The P-State driver provides its own sysfs files to control the P-State selection. These files have been added to /sys/devices/system/cpu/intel_pstate. Any changes made to these files are applicable to all CPUs
 .br
 min_perf_pct: Limits the minimum P-State that will be requested by the driver. It states it as a percentage of the max (non-turbo) performance level.
 .br
-[cpu] Intel P-State driver setting - performance related setting in tuned.conf
+The setting is disabled by default (leave empty)
 .br
-The value is commented out by default
+If activating performance related settings a recommended value for MIN_PERF_PCT to start with is 100
 .PP
 .RS 4
-Set during start, stop or profile change of tuned.
+Set during the performance setting part of the scripting
 .br
 SAP Note 2684254
 .RE
 .PP
 .TP 4
-.BI "elevator = noop"
-[disk] I/O scheduler - IO related setting in tuned.conf
+.BI IO_SCHEDULER="noop\ none"
+disk I/O scheduler
 .br
-The default I/O scheduler for SLES is CFQ. It offers satisfactory performance for wide range of I/O task, however choosing an alternative scheduler may potentially yield better latency characteristics and throughput.
+We renamed the parameter to IO_SCHEDULER to make a clear distinction to the former used tuned.conf parameter 'elevator'
+
+The default I/O scheduler for single-queued block layer devices offers satisfactory performance for wide range of I/O task, however choosing an alternative scheduler may potentially yield better latency characteristics and throughput.
 .br
-"noop" is an alternative scheduler, in comparison to CFQ it may offer more consistent performance, lower computation overhead, and potentially higher throughput. For most SAP environments (RAID, storage arrays, virtualizaton) "noop" is the better choice.
+"noop" is an alternative scheduler, in comparison to other schedulers it may offer more consistent performance, lower computation overhead, and potentially higher throughput.
 .br
-When set, all block devices on the system will be switched to the chosen scheduler.
+For most SAP environments (RAID, storage arrays, virtualizaton) 'noop' is the better choice.
+.br
+With the new introduced multi-queue scheduler for block layer devices the recommended I/O scheduler is 'none' as an equivalent to 'noop' for single-queued block layer devices.
+
+So IO_SCHEDULER can now contain a list of possible schedulers, separated by blanks, which are checked from left to right. The first one which is available in /sys/block/<device>/queue/scheduler will be used as new scheduler setting for the respective block device.
+
+When set, all block devices on the system will be switched to one of the chosen schedulers.
 .PP
 .RS 4
-Set during start, stop or profile change of tuned.
+Set in the common part (tune_preparation) of the scripting
 .br
 SAP Note 2578899
 .RE
-.PP
-.SH DESCRIPTION OF PART 3
-The parameters of the third part of the configuration file are not changeable. They are part of this file for documentation purpose only.
-.PP
-These values are profile independent. They describe requirements and settings during the sapconf package installation. See sapconf(7) for details.
-.TP 4
-.BI sysstat
-Package requirement. The service is started after installation of the package.
-.br
-SAP Note 2578899
-.PP
-.TP 4
-.BI uuidd.socket
-Package requirement. The service is enabled and started after installation of the package.
-.br
-SAP Note 2578899
-.PP
-.TP 4
-.BI sapinit-systemd-compat
-Package requirementm, only needed for SLES12GA and SLES12SP1. This package adds the needed drop-in file to the systemd configuration and told the daemon to re-read its configuration.
-.br
-SAP Note 2578899
 .PP
 .SH "FILES"
 .PP
@@ -320,19 +326,9 @@ SAP Note 2578899
 .RS 4
 central configuration file
 .RE
-.PP
-\fI/usr/lib/tuned/sapconf/tuned.conf\fR
-.RS 4
-profile special configuration file
-.br A description of the used values can be found at the end of the central configuration file \fI/etc/sysconfig/sapconf\fR
-The profile is stored in a subdirectory below \fI/usr/lib/tuned\fP. If you need to customize the profile, you can copy it to \fI/etc/tuned\fP and modify it as you need. When loading profiles with the same name, the /etc/tuned takes precedence. In such case you will not lose your customized profiles between tuned updates.
-.RE
 
 .SH SEE\ ALSO
 .BR sapconf (7)
-.BR tuned (8)
-.BR tuned\-adm (8)
-.BR tuned-profiles-sapconf(7)
 
 .SH AUTHORS
 .na

@@ -1,6 +1,6 @@
 [Unit]
 Description=sapconf
-After=syslog.target systemd-sysctl.service network.target
+After=syslog.target systemd-sysctl.service network.target tuned.service
 # SAP Note 2578899
 Wants=sysstat.service
 # Requested by https://bugzilla.suse.com/show_bug.cgi?id=983454 :
@@ -10,10 +10,9 @@ Requires=uuidd.socket
 [Service]
 Type=oneshot
 RemainAfterExit=true
-ExecStartPre=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == "" ]]; then tuned-adm profile sapconf &> /dev/null; fi'
-ExecStart=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) != sapconf ]]; then echo "non-sapconf tuned profile configured. Skipping activation. See man sapconf for details."; exit 1; else /usr/bin/systemctl start tuned.service; fi'
-ExecReload=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == sapconf ]]; then /usr/bin/systemctl restart tuned.service; fi'
-ExecStop=/bin/sh -c 'if [[ $(cat /etc/tuned/active_profile) == sapconf ]]; then /usr/bin/systemctl stop tuned.service >/dev/null 2>&1;  > /etc/tuned/active_profile; fi'
+ExecStart=/usr/lib/sapconf/sapconf start
+ExecReload=/bin/sh -c '/usr/lib/sapconf/sapconf stop; /usr/lib/sapconf/sapconf start'
+ExecStop=/usr/lib/sapconf/sapconf stop
 
 [Install]
 WantedBy=multi-user.target

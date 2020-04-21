@@ -6,7 +6,6 @@
 #   Angela Briel <abriel@suse.com>
 #   Howard Guo <hguo@suse.com>
 
-. /usr/lib/tuned/functions
 cd /usr/lib/sapconf || exit 1
 . util.sh
 
@@ -25,6 +24,9 @@ tune_preparation() {
     # Read value requirements from sysconfig, the declarations will set variables above.
     if [ -r /etc/sysconfig/sapconf ]; then
         source_sysconfig /etc/sysconfig/sapconf
+    else
+        log 'Failed to read /etc/sysconfig/sapconf'
+        exit 1
     fi
 
     # paranoia: should not happen, because post script of package installation
@@ -96,27 +98,34 @@ tune_preparation() {
         done
     done
 
+    # set block device scheduler
+    set_scheduler
+
     log "--- Finished application of universal tuning techniques"
 }
 
 # revert_preparation reverts tuning operations conducted by "1275776 - Preparing SLES for SAP" and "2578899 - Installation notes".
 revert_preparation() {
-    log "--- Going to revert universally tuned parameters"
+    log "--- Going to revert universally sapconf tuning parameters"
     # Restore tuned kernel parameters
     SHMMAX=$(restore_value kernel.shmmax)
-    [ "$SHMMAX" ] && log "Restoring kernel.shmmax=$SHMMAX" && sysctl -w kernel.shmmax="$SHMMAX"
+    [ "$SHMMAX" ] && log "Restoring kernel.shmmax=$SHMMAX" && sysctl -q -w kernel.shmmax="$SHMMAX"
 
     SHMALL=$(restore_value kernel.shmall)
-    [ "$SHMALL" ] && log "Restoring kernel.shmall=$SHMALL" && sysctl -w kernel.shmall="$SHMALL"
+    [ "$SHMALL" ] && log "Restoring kernel.shmall=$SHMALL" && sysctl -q -w kernel.shmall="$SHMALL"
 
     MAX_MAP_COUNT=$(restore_value vm.max_map_count)
-    [ "$MAX_MAP_COUNT" ] && log "Restoring vm.max_map_count=$MAX_MAP_COUNT" && sysctl -w vm.max_map_count="$MAX_MAP_COUNT"
+    [ "$MAX_MAP_COUNT" ] && log "Restoring vm.max_map_count=$MAX_MAP_COUNT" && sysctl -q -w vm.max_map_count="$MAX_MAP_COUNT"
 
     # Restore the size of tmpfs
     TMPFS_SIZE=$(restore_value tmpfs.size)
     TMPFS_OPTS=$(restore_value tmpfs.mount_opts)
     [ "$TMPFS_SIZE" ] && [ -e /dev/shm ] && mount -o "remount,${TMPFS_OPTS},size=${TMPFS_SIZE}k" /dev/shm
-    log "--- Finished reverting universally tuned parameters"
+
+    # Restore block device scheduler
+    restore_scheduler
+
+    log "--- Finished reverting universally sapconf tuning parameters"
 }
 
 # tune_uuidd_socket unconditionally enables and starts uuidd.socket as recommended in "2578899 - Installation notes".
@@ -133,5 +142,5 @@ tune_uuidd_socket() {
 # revert_shmmni reverts kernel.shmmni value to previous state.
 revert_shmmni() {
     SHMMNI=$(restore_value kernel.shmmni)
-    [ "$SHMMNI" ] && log "Restoring kernel.shmmni=$SHMMNI" && sysctl -w "kernel.shmmni=$SHMMNI"
+    [ "$SHMMNI" ] && log "Restoring kernel.shmmni=$SHMMNI" && sysctl -q -w "kernel.shmmni=$SHMMNI"
 }
