@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 5 "April 2020" "sapconf configuration file"
+.TH sapconf 5 "May 2020" "sapconf configuration file"
 .SH NAME
 sapconf \- central configuration file of sapconf
 
@@ -149,7 +149,7 @@ Contains the amount of dirty memory at which a process generating disk writes wi
 .br
 Note: \fBvm.dirty_bytes\fP is the counterpart of \fBvm.dirty_ratio\fP. Only one of them may be specified at a time. When one sysctl is written it is immediately taken into account to evaluate the dirty memory limits and the other appears as 0 when read.
 .br
-Note: when changing the tuned profile or switching off tuned, both values will be set back to their previous settings.
+Note: when changing the sapconf profile or stopping sapconf service, both values will be set back to their previous settings.
 .br
 Note: the minimum value allowed for dirty_bytes is two pages (in bytes); any value lower than this limit will be ignored and the old configuration will be retained.
 .br
@@ -167,7 +167,7 @@ Contains the amount of dirty memory at which the background kernel flusher threa
 .br
 Note: \fBvm.dirty_background_bytes\fP is the counterpart of \fBvm.dirty_background_ratio\fP.  Only one of them may be specified at a time. When one sysctl is written it is immediately taken into account to evaluate the dirty memory limits and the other appears as 0 when read.
 .br
-Note: when changing the tuned profile or switching off tuned, both values will be set back to their previous settings.
+Note: when changing the sapconf profile or stopping sapconf service, both values will be set back to their previous settings.
 .br
 \fBvm.dirty_background_bytes\fP is set to the DIRTY_BG_BYTES value from this file
 .PP
@@ -264,11 +264,6 @@ This will set \fBvm.pagecache_limit_ignore_dirty\fP during the common part (tune
 .br
 SAP Note 1557506
 .RE
-.PP
-.SH DESCRIPTION OF PART 2
-The parameters of the second part of the configuration file are not changeable in /etc/sysconfig/sapconf. They are part of this file for documentation purpose only.
-.PP
-These values are set in the configuration file \fB/usr/lib/tuned/<profile>/tuned.conf\fP, where <profile> may be sap-hana or sap-netweaver. See sapconf(7) for details how to change values from these configuration files.
 .PP
 .TP 4
 .BI PERF_BIAS=

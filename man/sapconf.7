@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 7 "April 2020" "util-linux" "System Administration"
+.TH sapconf 7 "May 2020" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -44,6 +44,16 @@ To activate a sapconf tuning profile, run as root:
 /usr/sbin/sapconf <profile>
 .br
 valid values for <profile> are \fInetweaver\fP,\fIhana\fP, \fIb1\fP, \fIase\fP, \fIsybase\fP, \fIbobj\fP. The sapconf internal representation of these values will be stored in \fI/var/lib/sapconf/act_profile\fP.
+.PP
+For the sapconf internal representation (value stored in \fI/var/lib/sapconf/act_profile\fP or \fI/var/lib/sapconf/last_profile\fP) the following mapping will be used:
+.br
+netweaver - sapconf-netweaver
+.br
+hana, b1 - sapconf-hana
+.br
+ase, sybase - sapconf-ase
+.br
+bobj - sapconf-bobj
 .PP
 Make sure that the sapconf service is enabled and running.
 .br
