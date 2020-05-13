@@ -33,7 +33,7 @@ start() {
     # prevent a second start (apply of values) as this will override the
     # saved old values of the parameters and reverting back to the
     # original state will be impossible
-    [ -f /var/run/sapconf/active ] && log "sapconf already active, no second start supported" && exit 1
+    [ -f /var/run/sapconf/active ] && log "sapconf already active, no second start supported" && exit 0
     [ ! -d /var/run/sapconf ] && mkdir -p /var/run/sapconf
     touch /var/run/sapconf/active
 
