@@ -158,6 +158,10 @@ case "$1" in
     # This is a new option, an extension to the traditional sapconf.
     # It activates NetWeaver tuning.
     log "--- Going to apply netweaver tuning techniques"
+    if [[ $profile == sapconf-netweaver ]]; then
+      log "profile '$profile' already active, no second start supported"
+      exit 0
+    fi
     if [[ $profile != "" && $profile != sapconf-netweaver ]]; then
       log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
       exit 1
@@ -171,6 +175,10 @@ case "$1" in
     # This is a new option, an extension to the traditional sapconf.
     # It activates HANA tuning.
     log "--- Going to apply hana tuning techniques"
+    if [[ $profile == sapconf-hana ]]; then
+      log "profile '$profile' already active, no second start supported"
+      exit 0
+    fi
     if [[ $profile != "" && $profile != sapconf-hana ]]; then
       log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
       exit 1
@@ -184,6 +192,10 @@ case "$1" in
     # This is a new option, an extension to the traditional sapconf.
     # It activates SAP ASE tuning.
     log "--- Going to apply ase tuning techniques"
+    if [[ $profile == sapconf-ase ]]; then
+      log "profile '$profile' already active, no second start supported"
+      exit 0
+    fi
     if [[ $profile != "" && $profile != sapconf-ase ]]; then
       log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
       exit 1
@@ -197,6 +209,10 @@ case "$1" in
     # This is a new option, an extension to the traditional sapconf.
     # It activates SAP Business OBJects tuning.
     log "--- Going to apply bobj tuning techniques"
+    if [[ $profile == sapconf-bobj ]]; then
+      log "profile '$profile' already active, no second start supported"
+      exit 0
+    fi
     if [[ $profile != "" && $profile != sapconf-bobj ]]; then
       log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
       exit 1

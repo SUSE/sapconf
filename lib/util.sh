@@ -242,10 +242,18 @@ set_scheduler() {
     # read block devices from /sys/block
     #for i in $(eval LANG=C ls -1 /sys/block 2>/dev/null); do
     for i in /sys/block/*; do
+        skip=false
         dev=${i##*/}
         # check block device type.
-	[ ! -f /sys/block/"$dev"/device/type ] && continue
-        [[ $(cat /sys/block/"$dev"/device/type) -ne 0 ]] && continue
+        if [ ! -f /sys/block/"$dev"/device/type ]; then
+            skip=true
+        elif [[ $(cat /sys/block/"$dev"/device/type) -ne 0 ]]; then
+            skip=true
+        fi
+        # virtio block devices do not have a 'type' file, need workaround
+        [[ "$dev" =~ vd* ]] && skip=false
+        $skip && continue
+
         # Only set scheduler for TYPE_DISK / 0x00
         # check, if IO_SCHEDULER includes a valid scheduler
         # use the first valid scheduler as new scheduler
