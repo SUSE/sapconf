@@ -299,9 +299,9 @@ tune_ase() {
     for ulimit_type in soft hard; do
         sysconf_line="${ulimit_group} ${ulimit_type} memlock $MEMLOCK"
         limits_line=$(grep -E "^${ulimit_group}[[:space:]]+${ulimit_type}[[:space:]]+memlock+" /etc/security/limits.conf)
-        save_limit=0
+        save_limit=""
         if [ "$limits_line" ]; then
-            save_limit=$(${limits_line##*[[:space:]]})
+            save_limit=${limits_line##*[[:space:]]}
             sed -i "/$limits_line/d" /etc/security/limits.conf
         fi
         echo "$sysconf_line" >> /etc/security/limits.conf
@@ -445,7 +445,9 @@ revert_ase() {
         if [ "$limits_line" ]; then
             sed -i "/$limits_line/d" /etc/security/limits.conf
         fi
-        echo "$restore_line" >> /etc/security/limits.conf
+        if [ -n "$MEMLOCK" ]; then
+            echo "$restore_line" >> /etc/security/limits.conf
+        fi
     done
 
     # Restore THP
