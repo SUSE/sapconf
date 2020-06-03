@@ -138,11 +138,11 @@ revert_preparation() {
 tune_uuidd_socket() {
     # paranoia: should not happen, because uuidd.socket should be enabled
     # by vendor preset and sapconf.service should start uuidd.socket.
-    if ! systemctl is-active uuidd.socket; then
+    if ! systemctl -q is-active uuidd.socket; then
         log "--- Going to start uuidd.socket"
         systemctl start uuidd.socket
     fi
-    if ! systemctl is-enabled uuidd.socket; then
+    if ! systemctl -q is-enabled uuidd.socket; then
         log "--- Going to enable uuidd.socket"
         systemctl enable uuidd.socket
     fi
