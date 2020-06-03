@@ -196,7 +196,7 @@ set_readahead() {
 	[ -f /sys/block/"$dev"/queue/read_ahead_kb ] && cur_val=$(get_sys_val /sys/block/"$dev"/queue/read_ahead_kb)
         if [ "$cur_val" != "$READAHEAD" ]; then
             [ -n "$cur_val" ] && save_value READ_AHEAD_"$dev" "$cur_val"
-            log "Change value of read_ahead_kb for block device '/sys/block/$dev' from '$cur_val' to '$READAHEAD'$READAHEAD'"
+            log "Change value of read_ahead_kb for block device '/sys/block/$dev' from '$cur_val' to '$READAHEAD'"
             echo "$READAHEAD" > /sys/block/"$dev"/queue/read_ahead_kb
         else
             log "Leaving read_ahead_kb for block device '/sys/block/$dev' unchanged at '$cur_val'"

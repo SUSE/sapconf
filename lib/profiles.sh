@@ -368,6 +368,7 @@ tune_ase() {
     save_value vm.nr_hugepages "$(sysctl -n vm.nr_hugepages)"
     chk_and_set_conf_val NUMBER_HUGEPAGES vm.nr_hugepages
 
+    cur_val=$(sed 's%.*\[\(.*\)\].*%\1%' /sys/kernel/mm/transparent_hugepage/enabled)
     THP=$(chk_conf_val THP "$cur_val")
     if [ "$cur_val" != "$THP" ]; then
         save_value thp "$cur_val"
