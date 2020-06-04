@@ -125,7 +125,7 @@ if [ -f /run/sapconf_during_pkg_inst ]; then
 fi
 
 log "--- /usr/sbin/sapconf called with '$1'"
-(systemctl -q is-enabled tuned || systemctl -q is-active tuned) && log "ATTENTION: tuned service is enabled/active, so we may encounter conflicting tuning values"
+(systemctl -q is-enabled tuned 2>/dev/null || systemctl -q is-active tuned) && log "ATTENTION: tuned service is enabled/active, so we may encounter conflicting tuning values"
 
 if [ "$1" != "status" ]; then
     # service should fail, if saptune.service is enabled or has exited / save

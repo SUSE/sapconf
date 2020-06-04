@@ -32,16 +32,6 @@ NNAME=IO_SCHEDULER
 TCVAL=$(grep "${pat}[[:blank:]]*=" "$CUSTOM_TCONF" | grep "^[^#]" | sed "s/ = /=/" | awk -F = '{print $2}')
 SCPAT=$(grep "$NNAME=" "$SN" | grep "^[^#]")
 NLINE="$NNAME=$TCVAL"
-if [ -n "$SCPAT" ]; then
-    if [ -n "$TCVAL" ]; then
-        if ! echo "$SCPAT" | sed 's/"//g' | awk -F = '{print $2}' | grep "$TCVAL" >/dev/null 2>&1; then
-            echo "Add scheduler '$TCVAL' from '$CUSTOM_TCONF' to the list of schedulers in '$SN'"
-            NLINE=${SCPAT//IO_SCHEDULER=\"/IO_SCHEDULER=\"$TCVAL }
-        else
-            NLINE=$SCPAT
-        fi
-    fi
-fi
 if [[ -n "$NLINE" && -n "$SCPAT" && "$NLINE" != "$SCPAT" ]]; then
     echo "Updating $SN line '$SCPAT' with line '$NLINE' from $CUSTOM_TCONF..."
     sed -i "s/$SCPAT/$NLINE/" "$SN"
