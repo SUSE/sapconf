@@ -14,25 +14,23 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 7 "March 2020" "util-linux" "System Administration"
+.TH sapconf 7 "June 2020" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
 .SH DESCRIPTION
-sapconf automatically optimises kernel parameters and system configuration for running SAP workloads like NetWeaver, Sybase/ASE, BOBJ and HANA and Business One softwares.
+sapconf automatically optimises kernel parameters and system configuration for running SAP workloads like NetWeaver, Sybase/ASE, BOBJ and HANA and Business One software.
 .br
-sapconf is \fBno longer\fP working on top of the tune daemon.
+sapconf is \fBno longer\fP working on top of the tuned daemon.
 
 .SH CONFIGURATION
 The main customization can be done in the central configuration file \fI/etc/sysconfig/sapconf\fP of sapconf.
 .br
 All parameters to be set by sapconf are descibed in detail within this file and will be read from this file.
 .br
-Be in mind: Higher or lower system values set by the system, the SAP installer or by the administrator using sysctl command or sysctl configuration files will be overwritten by sapconf, if they are part of the sapconf sysconfig file.
+Bear in mind: Higher or lower system values set by the system, the SAP installer or by the administrator using sysctl command or sysctl configuration files will be overwritten by sapconf, if they are part of the sapconf sysconfig file.
 .br
 During the package update of sapconf existing former custom tuned profiles related to sapconf in \fI/etc/tuned\fP are preserved in \fI/var/lib/sapconf/saved_configs\fP. Changed parameter values from an existing sapconf or sap-hana or sap-netweaver profile are automatically added to \fI/etc/sysconfig/sapconf\fP.
-.PP
-The process is splitted in 2 scripts. The \fIcommon.sh\fP is inherited by the script \fIsapconf\fP which will do the whole tuning.
 .PP
 Every tuning action is logged to \fI/var/log/sapconf.log\fP
 
@@ -67,6 +65,8 @@ Enable uuidd.socket.
 All settings are done according to SAP note number 900929, 941735, 1771258, 1980196, 2578899, 2031375, 2131662, 2684254, 2382421 and 2534844
 .br
 See the comments in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR or \fBsapconf(5)\fP for details.
+
+ATTENTION: Only chosen parts of the SAP Notes are implemented.
 
 .SH ACTIVATION
 To activate the sapconf tuning, run as root:
