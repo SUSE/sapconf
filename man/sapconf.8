@@ -15,7 +15,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "April 2020" "util-linux" "System Administration"
+.TH sapconf 8 "June 2020" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -25,6 +25,8 @@ sapconf ACTION_NAME
 .SH DESCRIPTION
 sapconf activates SAP NetWeaver, SAP ASE/Sybase, SAP Business OBJects (BOBJ) or HANA/BusinessOne tuning profiles depending on the command line action input.
 .\" *sapconf is deprecated in favour of tune daemon (tuned) and its profiles "sap-netweaver", "sap-hana", "sap-ase", "sap-bobj". #bnc1098352
+
+ATTENTION - Preview: starting with SLE15 this script will not be available any longer in /usr/sbin. In the future we will only support the systemd service file 'sapconf.service'. And we will no longer distinguish between different profiles.
 
 .SH ACTIONS
 

@@ -422,7 +422,7 @@ set_governor() {
         old_gov=$(cat "$cpu_path"/cpufreq/scaling_governor)
         if [ "$old_gov" != "$GOVERNOR" ]; then
             save_value "${cpu}_gov" "$old_gov"
-            cpu_nr="${cpu##cpu_}"
+            cpu_nr="${cpu##cpu}"
             log "Set scaling governor for cpu '${cpu}' to '$GOVERNOR'"
             if [ -x /usr/bin/cpupower ]; then
                 /usr/bin/cpupower -c "${cpu_nr}" frequency-set -g "$GOVERNOR"
@@ -441,7 +441,7 @@ restore_governor() {
     # read /sys/devices/system/cpu/cpu*
     for cpu_path in /sys/devices/system/cpu/cpu[0-9]*; do
         cpu="${cpu_path##*/}"
-        cpu_nr="${cpu##cpu_}"
+        cpu_nr="${cpu##cpu}"
         old_gov=$(restore_value "${cpu}_gov")
         [ -n "$old_gov" ] && log "Restoring scaling governor '$old_gov' for cpu '${cpu}'" && /usr/bin/cpupower -c "${cpu_nr}" frequency-set -g "$old_gov"
     done

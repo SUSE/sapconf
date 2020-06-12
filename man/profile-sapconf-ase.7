@@ -14,12 +14,14 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH PROFILE_SAP_ASE "7" "April 2020" "sapconf profile"
+.TH PROFILE_SAP_ASE "7" "June 2020" "sapconf profile"
 .SH NAME
 profile\-sapconf\-ase - Tuning profile for SAP ASE (Sybase).
 
 .SH DESCRIPTION
 The tuning profile automatically optimises kernel parameters and system configuration for running SAP ASE (Sybase) softwares.
+
+ATTENTION - Preview: starting with SLE15 we will no longer distinguish between different profiles.
 
 The following parameters are calculated and tuned, according to various SAP notes and best practices:
 
@@ -51,6 +53,8 @@ Enable uuidd.socket.
 
 .SH "SAP NOTES"
 The tuned parameters are calculated according to SAP note number 1275776, 1984787, 1557506, 2534844, 1410736, 1680803.
+
+ATTENTION: Only chosen parts of the SAP Notes are implemented.
 
 .SH ACTIVATION
 To activate the SAP ASE tuning profile, run as root:

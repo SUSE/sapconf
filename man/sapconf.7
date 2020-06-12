@@ -14,27 +14,23 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 7 "May 2020" "util-linux" "System Administration"
+.TH sapconf 7 "June 2020" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
 .SH DESCRIPTION
-For compatibility reasons the command sapconf(8) exists.
-.PP
-sapconf automatically optimises kernel parameters and system configuration for running SAP workloads like NetWeaver, Sybase/ASE, BOBJ and HANA and Business One softwares.
+sapconf automatically optimises kernel parameters and system configuration for running SAP workloads like NetWeaver, Sybase/ASE, BOBJ and HANA and Business One software.
 .br
-sapconf is \fBno longer\fP working on top of the tune daemon.
+sapconf is \fBno longer\fP working on top of the tuned daemon.
 
 .SH CONFIGURATION
 The main customization can be done in the central configuration file \fI/etc/sysconfig/sapconf\fP of sapconf.
 .br
 All parameters to be set by sapconf are descibed in detail within this file and will be read from this file.
 .br
-Be in mind: Higher or lower system values set by the system, the SAP installer or by the administrator using sysctl command or sysctl configuration files will be overwritten by sapconf, if they are part of the sapconf sysconfig file.
+Bear in mind: Higher or lower system values set by the system, the SAP installer or by the administrator using sysctl command or sysctl configuration files will be overwritten by sapconf, if they are part of the sapconf sysconfig file.
 .br
 During the package update of sapconf existing former custom tuned profiles related to sapconf in \fI/etc/tuned\fP are preserved in \fI/var/lib/sapconf/saved_configs\fP. Changed parameter values from an existing former custom tuned profile are automatically added to the related sysconfig file.
-.PP
-The process is splitted in 2 scripts. The \fIcommon.sh\fP is inherited by all profiles and \fIprofiles.sh\fP will do the whole tuning for the selected profile.
 .PP
 Every tuning action is logged to \fI/var/log/sapconf.log\fP
 
@@ -80,13 +76,15 @@ If you see the error message:
 please check the active sapconf tuning profile by '\fBcat /var/lib/sapconf/act_profile\fR' and change it to one of the pre\-defined profiles listed below by '\fB/usr/sbin/sapconf <profile>\fR'.
 
 .SH PROFILES
+ATTENTION - Preview: starting with SLE15 we will no longer distinguish between different profiles.
+
 At the moment we're providing the following pre\-defined profiles:
 .TP
 .BI "sapconf\-netweaver"
 Tuning profile for SAP NetWeaver. It is the default profile. If no sapconf profile is active and there is no information about the last used sapconf profile available in \fI/var/lib/sapconf/last_profile\fR, \fBsapconf(8)\fR will activiate SAP NetWeaver tuning profile during start.
 See the man page \fBprofile-sapconf-netweaver(7)\fR for details.
 .br
-To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and NetWeaver workloads. That means the use of the same configuration files and scripts for both profiles
+To get a better base in the future for mixed HANA and ABAB workloads on one system, sapconf will use the same tuning values for HANA and NetWeaver workloads. That means the same configuration is used for both profiles.
 .PP
 .TP
 .BI "sapconf\-hana"
@@ -106,6 +104,8 @@ Profile for SAP Business OBJects (BOBJ) tuning. See the man page \fBprofile-sapc
 All settings are done according to SAP note number 900929, 941735, 1557506, 1771258, 1980196, 1984787, 2031375, 2055470, 2131662, 2205917, 2382421 and 2534844
 .br
 See the comments in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR or \fBsapconf(5)\fP for details.
+
+ATTENTION: Only chosen parts of the SAP Notes are implemented.
 
 .SH "PACKAGE REQUIREMENTS"
 The following package requirements exist for the sapconf package:

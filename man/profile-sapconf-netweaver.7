@@ -14,12 +14,14 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH PROFILE_SAPCONF_NETWEAVER "7" "April 2020" "sapconf profile"
+.TH PROFILE_SAPCONF_NETWEAVER "7" "June 2020" "sapconf profile"
 .SH NAME
 profile\-sapconf\-netweaver - Tuning profile for SAP NetWeaver.
 
 .SH DESCRIPTION
 The tuning profile automatically optimises kernel parameters and system configuration for running SAP NetWeaver softwares.
+
+ATTENTION - Preview: starting with SLE15 we will no longer distinguish between different profiles.
 
 The following parameters are calculated and tuned, according to various SAP notes and best practices:
 .IP \[bu]
@@ -57,6 +59,8 @@ use the same tuning values for HANA and NetWeaver workloads to get a better base
 .SH "SAP NOTES"
 The tuning parameters are calculated according to SAP note number 900929, 941735, 1557506, 1771258, 1980196, 1984787, 2031375, 2055470, 2131662, 2205917, 2382421 and 2534844
 .br See the comments in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR for details.
+
+ATTENTION: Only chosen parts of the SAP Notes are implemented.
 
 .SH ACTIVATION
 To activate the SAP NetWeaver tuning profile, run as root:

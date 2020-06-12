@@ -14,12 +14,14 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH PROFILE_SAPCONF_BOBJ "7" "April 2020" "sapconf profile"
+.TH PROFILE_SAPCONF_BOBJ "7" "June 2020" "sapconf profile"
 .SH NAME
 profile\-sapconf\-bobj - Tuning profile for SAP Business OBJects (BOBJ).
 
 .SH DESCRIPTION
 The tuning profile automatically optimises kernel parameters and system configuration for running SAP Business OBJects (BOBJ) softwares.
+
+ATTENTION - Preview: starting with SLE15 we will no longer distinguish between different profiles.
 
 The following parameters are calculated and tuned, according to various SAP notes and best practices:
 .IP \[bu]
@@ -41,6 +43,8 @@ Enable uuidd.socket.
 
 .SH "SAP NOTES"
 The tuning parameters are calculated according to SAP note number 1275776, 1984787, 1557506 and the BOBJ Installation Guide for Unix.
+
+ATTENTION: Only chosen parts of the SAP Notes are implemented.
 
 .SH ACTIVATION
 To activate the SAP Business OBJects tuning profile, run as root:
