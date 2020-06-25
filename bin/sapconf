@@ -241,7 +241,7 @@ case "$1" in
   ;;
 
   *)
-    echo "Usage: $0 {start|reload|netweaver|hana|b1|ase|sybase|bobj|stop|status}"
+    echo "Usage: $0 {start|reload|restart|try-restart|netweaver|hana|b1|ase|sybase|bobj|stop|status}"
     exit 1
   ;;
 
