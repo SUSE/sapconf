@@ -37,7 +37,7 @@ If the start failed and you get the error message:
 .br
 \fBnon-sapconf tuning profile configured. Skipping activation. See man sapconf for details.\fR
 
-please check the active sapconf tuning profile by '\fBcat /var/lib/sapconf/act_profile\fR' and change it to one of the pre\-defined profiles listed below by '\fB/usr/sbin/sapconf <profile>\fR'.
+please check the active sapconf tuning profile by '\fBcat /run/sapconf_act_profile\fR' and change it to one of the pre\-defined profiles listed below by '\fB/usr/sbin/sapconf <profile>\fR'.
 
 .IP \[bu]
 reload - If a sapconf profile is active, stop and start the sapconf tuning.
