@@ -39,9 +39,9 @@ To activate a sapconf tuning profile, run as root:
 .PP
 /usr/sbin/sapconf <profile>
 .br
-valid values for <profile> are \fInetweaver\fP,\fIhana\fP, \fIb1\fP, \fIase\fP, \fIsybase\fP, \fIbobj\fP. The sapconf internal representation of these values will be stored in \fI/var/lib/sapconf/act_profile\fP.
+valid values for <profile> are \fInetweaver\fP,\fIhana\fP, \fIb1\fP, \fIase\fP, \fIsybase\fP, \fIbobj\fP. The sapconf internal representation of these values will be stored in \fI/run/sapconf_act_profile\fP.
 .PP
-For the sapconf internal representation (value stored in \fI/var/lib/sapconf/act_profile\fP or \fI/var/lib/sapconf/last_profile\fP) the following mapping will be used:
+For the sapconf internal representation (value stored in \fI/run/sapconf_act_profile\fP or \fI/var/lib/sapconf/last_profile\fP) the following mapping will be used:
 .br
 netweaver - sapconf-netweaver
 .br
@@ -73,7 +73,7 @@ If you see the error message:
 .br
 \fBnon-sapconf tuning profile configured. Skipping activation. See man sapconf for details.\fR
 
-please check the active sapconf tuning profile by '\fBcat /var/lib/sapconf/act_profile\fR' and change it to one of the pre\-defined profiles listed below by '\fB/usr/sbin/sapconf <profile>\fR'.
+please check the active sapconf tuning profile by '\fBcat /run/sapconf_act_profile\fR' and change it to one of the pre\-defined profiles listed below by '\fB/usr/sbin/sapconf <profile>\fR'.
 
 .SH PROFILES
 ATTENTION - Preview: starting with SLE15 we will no longer distinguish between different profiles.
@@ -185,7 +185,7 @@ Private copies of sapconf related former tuned profiles moved from /etc/tuned du
 contains the last used sapconf profile. The file will be written during stop of the sapconf service and the content will be used during start of the sapconf service.
 .RE
 .PP
-\fI/var/lib/sapconf/act_profile\fR
+\fI/run/sapconf_act_profile\fR
 .RS 4
 The file will be written during start of the sapconf service. It contains the current applied profile, if sapconf is active.
 .br
