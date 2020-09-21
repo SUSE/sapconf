@@ -88,12 +88,13 @@ stop() {
     log "--- "
     log "--- stopping sapconf ...."
     log "--- "
+    rm -f /run/sapconf_act_profile
     if [[ $profile == "" || $profile != sapconf-* ]]; then
       log "no active sapconf tuning - profile=$profile -, so nothing to revert"
       exit 0
     else
-      > /run/sapconf_act_profile
-      case  "$profile" in
+      echo "$profile" > /var/lib/sapconf/last_profile
+      case "$profile" in
       sapconf-netweaver)
         log "--- Going to revert netweaver tuning techniques"
         revert_netweaver
@@ -161,13 +162,13 @@ case "$1" in
       log "profile '$profile' already active, no second start supported"
       exit 0
     fi
-    if [[ $profile != "" && $profile != sapconf-netweaver ]]; then
+    if [[ $profile != "" && $profile == sapconf-* ]]; then
       log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
       exit 1
     fi
-    profile=${profile:-sapconf-netweaver}
-    echo "$profile" > /var/lib/sapconf/last_profile
+    profile=sapconf-netweaver
     echo "$profile" > /run/sapconf_act_profile
+    echo "$profile" > /var/lib/sapconf/last_profile
     tune_netweaver
   ;;
 
@@ -179,13 +180,13 @@ case "$1" in
       log "profile '$profile' already active, no second start supported"
       exit 0
     fi
-    if [[ $profile != "" && $profile != sapconf-hana ]]; then
+    if [[ $profile != "" && $profile == sapconf-* ]]; then
       log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
       exit 1
     fi
-    profile=${profile:-sapconf-hana}
-    echo "$profile" > /var/lib/sapconf/last_profile
-    echo "$profile" > /run/sapconf_act_profile
+    profile=sapconf-hana
+    echo "$profile" > /run/sapconf/act_profile
+    echo "$profile" > /var/lib/sapconf_last_profile
     tune_hana
   ;;
 
@@ -197,13 +198,13 @@ case "$1" in
       log "profile '$profile' already active, no second start supported"
       exit 0
     fi
-    if [[ $profile != "" && $profile != sapconf-ase ]]; then
+    if [[ $profile != "" && $profile == sapconf-* ]]; then
       log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
       exit 1
     fi
-    profile=${profile:-sapconf-ase}
-    echo "$profile" > /var/lib/sapconf/last_profile
+    profile=sapconf-ase
     echo "$profile" > /run/sapconf_act_profile
+    echo "$profile" > /var/lib/sapconf/last_profile
     tune_ase
   ;;
 
@@ -215,13 +216,13 @@ case "$1" in
       log "profile '$profile' already active, no second start supported"
       exit 0
     fi
-    if [[ $profile != "" && $profile != sapconf-bobj ]]; then
+    if [[ $profile != "" && $profile == sapconf-* ]]; then
       log "profile '$profile' currently active, please revert these settings first by using 'sapconf stop'"
       exit 1
     fi
-    profile=${profile:-sapconf-bobj}
-    echo "$profile" > /var/lib/sapconf/last_profile
+    profile=sapconf-bobj
     echo "$profile" > /run/sapconf_act_profile
+    echo "$profile" > /var/lib/sapconf/last_profile
     tune_bobj
   ;;
 
@@ -244,7 +245,7 @@ case "$1" in
   ;;
 
   *)
-    echo "Usage: $0 {start|reload|netweaver|hana|b1|ase|sybase|bobj|stop|status}"
+    echo "Usage: $0 {start|reload|restart|try-restart|netweaver|hana|b1|ase|sybase|bobj|stop|status}"
     exit 1
   ;;
 
