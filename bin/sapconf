@@ -35,7 +35,7 @@ cd /usr/lib/sapconf || exit 1
 . common.sh
 . profiles.sh
 
-profile=$(cat /var/lib/sapconf/act_profile 2> /dev/null)
+profile=$(cat /run/sapconf_act_profile 2> /dev/null)
 
 start() {
     log "--- "
@@ -55,7 +55,7 @@ start() {
       exit 0
     fi
     profile=${profile:-sapconf-netweaver}
-    echo "$profile" > /var/lib/sapconf/act_profile
+    echo "$profile" > /run/sapconf_act_profile
 
     case  "$profile" in
     sapconf-netweaver)
@@ -92,8 +92,7 @@ stop() {
       log "no active sapconf tuning - profile=$profile -, so nothing to revert"
       exit 0
     else
-      echo "$profile" > /var/lib/sapconf/last_profile
-      > /var/lib/sapconf/act_profile
+      > /run/sapconf_act_profile
       case  "$profile" in
       sapconf-netweaver)
         log "--- Going to revert netweaver tuning techniques"
@@ -167,7 +166,8 @@ case "$1" in
       exit 1
     fi
     profile=${profile:-sapconf-netweaver}
-    echo "$profile" > /var/lib/sapconf/act_profile
+    echo "$profile" > /var/lib/sapconf/last_profile
+    echo "$profile" > /run/sapconf_act_profile
     tune_netweaver
   ;;
 
@@ -184,7 +184,8 @@ case "$1" in
       exit 1
     fi
     profile=${profile:-sapconf-hana}
-    echo "$profile" > /var/lib/sapconf/act_profile
+    echo "$profile" > /var/lib/sapconf/last_profile
+    echo "$profile" > /run/sapconf_act_profile
     tune_hana
   ;;
 
@@ -201,7 +202,8 @@ case "$1" in
       exit 1
     fi
     profile=${profile:-sapconf-ase}
-    echo "$profile" > /var/lib/sapconf/act_profile
+    echo "$profile" > /var/lib/sapconf/last_profile
+    echo "$profile" > /run/sapconf_act_profile
     tune_ase
   ;;
 
@@ -218,7 +220,8 @@ case "$1" in
       exit 1
     fi
     profile=${profile:-sapconf-bobj}
-    echo "$profile" > /var/lib/sapconf/act_profile
+    echo "$profile" > /var/lib/sapconf/last_profile
+    echo "$profile" > /run/sapconf_act_profile
     tune_bobj
   ;;
 
