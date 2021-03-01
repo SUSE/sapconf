@@ -367,6 +367,29 @@ restore_perf_bias() {
     done
 }
 
+# set the min_perf_pct value to the 'MIN_PERF_PCT' value from
+# the sysconfig file
+set_min_perf_pct() {
+    param=min_perf_pct
+    sysfile=/sys/devices/system/cpu/intel_pstate/min_perf_pct
+    if [ -d /sys/devices/system/cpu/intel_pstate ]; then
+        if [ -z "$MIN_PERF_PCT" ]; then
+            log "'MIN_PERF_PCT' not set in sysconfig file."
+            log "Leaving min_perf_pct settings untouched"
+            return 0
+        fi
+        [[ ! -f $sysfile ]] && log "Can't set parameter $param, because file $sysfile does not exist." && return 0
+        current_val=$(cat "$sysfile")
+        if [ "$current_val" != "$MIN_PERF_PCT" ]; then
+            save_value "$param" "$current_val"
+            log "Change $param from $current_val to $MIN_PERF_PCT"
+            echo "$MIN_PERF_PCT" > "$sysfile"
+        else
+            log "Leaving $param unchanged at $current_val"
+        fi
+    fi
+}
+
 # set cpu scaling governor setting and store the old settings
 set_governor() {
     [[ $(uname -m) != "x86_64" ]] && log "scaling governor settings are only relevant for Intel-based systems." && return 0

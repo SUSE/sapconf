@@ -129,9 +129,7 @@ start() {
         # scaling governor settings
         set_governor
         # min_perf_pct settings
-        if [ -d /sys/devices/system/cpu/intel_pstate ]; then
-            save_and_set_sys_val min_perf_pct /sys/devices/system/cpu/intel_pstate/min_perf_pct
-        fi
+        set_min_perf_pct
         log "--- Finished application of performance settings"
     fi
 
