@@ -183,7 +183,7 @@ case "$1" in
     fi
     profile=sapconf-hana
     echo "$profile" > /run/sapconf_act_profile
-    echo "$profile" > /var/lib/sapconf_last_profile
+    echo "$profile" > /var/lib/sapconf/last_profile
     tune_hana
   ;;
 
