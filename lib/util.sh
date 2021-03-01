@@ -437,3 +437,37 @@ restore_governor() {
         [ -n "$old_gov" ] && log "Restoring scaling governor '$old_gov' for cpu '${cpu}'" && /usr/bin/cpupower -c "${cpu_nr}" frequency-set -g "$old_gov"
     done
 }
+
+# check for active saptune service
+# saptune.service is enabled or has exited or save state files are present
+# (jsc#SLE-10987 decision)
+chk_active_saptune() {
+    enabled=false
+    active=false
+    used=false
+    if systemctl -q is-enabled saptune.service 2>/dev/null; then
+        enabled=true
+        txt="is enabled"
+    fi
+    if systemctl -q is-active saptune.service 2>/dev/null; then
+        active=true
+        if [ -n "$txt" ]; then
+            txt=$txt" and active"
+        else
+            txt="is active"
+        fi
+    fi
+    if [[ $(ls -A /var/lib/saptune/saved_state 2>/dev/null) ]]; then
+        used=true
+        if [ -n "$txt" ]; then
+            txt=$txt" and has applied notes/solutions"
+        else
+            txt="has applied notes/solutions"
+        fi
+    fi
+    if $enabled || $active || $used; then
+        log "ATTENTION: saptune $txt, so refuse any action"
+        return 1
+    fi
+    return 0
+}
