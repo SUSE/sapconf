@@ -507,3 +507,37 @@ restore_performance_settings() {
         [ "$MIN_PERF_PCT" ] && log "Restoring min_perf_pct=$MIN_PERF_PCT" && echo "$MIN_PERF_PCT" > /sys/devices/system/cpu/intel_pstate/min_perf_pct
     fi
 }
+
+# check for active saptune service
+# saptune.service is enabled or has exited or save state files are present
+# (jsc#SLE-10987 decision)
+chk_active_saptune() {
+    enabled=false
+    active=false
+    used=false
+    if systemctl -q is-enabled saptune.service 2>/dev/null; then
+        enabled=true
+        txt="is enabled"
+    fi
+    if systemctl -q is-active saptune.service 2>/dev/null; then
+        active=true
+        if [ -n "$txt" ]; then
+            txt=$txt" and active"
+        else
+            txt="is active"
+        fi
+    fi
+    if [[ $(ls -A /var/lib/saptune/saved_state 2>/dev/null) ]]; then
+        used=true
+        if [ -n "$txt" ]; then
+            txt=$txt" and has applied notes/solutions"
+        else
+            txt="has applied notes/solutions"
+        fi
+    fi
+    if $enabled || $active || $used; then
+        log "ATTENTION: saptune $txt, so refuse any action"
+        return 1
+    fi
+    return 0
+}
