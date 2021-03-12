@@ -537,6 +537,10 @@ chk_active_saptune() {
     fi
     if $enabled || $active || $used; then
         log "ATTENTION: saptune $txt, so refuse any action"
+        if [ -f /run/sapconf_act_profile ]; then
+            cat /run/sapconf_act_profile > /var/lib/sapconf/last_profile
+            rm -f /run/sapconf_act_profile
+        fi
         return 1
     fi
     return 0
