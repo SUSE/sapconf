@@ -4,7 +4,7 @@
 #
 # /usr/sbin/sapconf
 #
-# Copyright (c) 2015-2020 SUSE LLC
+# Copyright (c) 2015-2021 SUSE LLC
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License
@@ -131,10 +131,7 @@ if [ "$1" != "status" ]; then
     # service should fail, if saptune.service is enabled or has exited / save
     # state files are present
     # (jsc#SLE-10987 decision)
-    if systemctl -q is-enabled saptune.service 2>/dev/null || [[ $(ls -A /var/lib/saptune/saved_state 2>/dev/null) ]]; then
-        log "ATTENTION: found an active saptune, so refuse any action"
-        exit 1
-    fi
+    chk_active_saptune || exit 1
 fi
 
 case "$1" in
@@ -185,8 +182,8 @@ case "$1" in
       exit 1
     fi
     profile=sapconf-hana
-    echo "$profile" > /run/sapconf/act_profile
-    echo "$profile" > /var/lib/sapconf_last_profile
+    echo "$profile" > /run/sapconf_act_profile
+    echo "$profile" > /var/lib/sapconf/last_profile
     tune_hana
   ;;
 

@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2015-2020 SUSE LLC
+.\" * Copyright (c) 2015-2021 SUSE LLC
 .\" * Authors: Howard Guo
 .\" *	       Zsolt KALMAR
 .\" *
@@ -15,7 +15,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 8 "June 2020" "util-linux" "System Administration"
+.TH sapconf 8 "February 2021" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -37,7 +37,11 @@ If the start failed and you get the error message:
 .br
 \fBnon-sapconf tuning profile configured. Skipping activation. See man sapconf for details.\fR
 
-please check the active sapconf tuning profile by '\fBcat /run/sapconf_act_profile\fR' and change it to one of the pre\-defined profiles listed below by '\fB/usr/sbin/sapconf <profile>\fR'.
+please check the active sapconf tuning profile.
+
+The active sapconf tuning profile can be checked by '\fBcat /run/sapconf_act_profile\fR'.
+.br
+To change the sapconf profile execute '\fB/usr/sbin/sapconf <profile>\fR', where <profile> is one of the pre\-defined profiles listed below
 
 .IP \[bu]
 reload - If a sapconf profile is active, stop and start the sapconf tuning.
