@@ -1,0 +1,482 @@
+#!/bin/bash
+# ------------------------------------------------------------------------------
+# Copyright (c) 2019-2021 SUSE LLC
+#
+# This program is free software; you can redistribute it and/or modify it under
+# the terms of version 3 of the GNU General Public License as published by the
+# Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# this program; if not, contact SUSE Linux GmbH.
+#
+# ------------------------------------------------------------------------------
+# Author: Sören Schmidt <soeren.schmidt@suse.com>
+#
+# This tool checks if sapconf (>= 5.0.1) is set up correctly. 
+# It will not dig deeper to check if the tuning itself is working.
+#
+# exit codes:       0   All checks ok. Sapconf has been set up correctly.
+#                   1   Some warnings occured. Sapconf should work, but better check manually.
+#                   2   Some errors occured. Sapconf will not work.
+#                   3   Wrong parameters given to the tool on commandline.
+#
+# Changelog:
+#
+# 18.03.2021  v1.0      First release. (Split of sapconf_saptune_check v1.2.1)
+
+version="1.0"
+
+# We use these global arrays through out the program:
+#
+# os_version          -  contins release and service pack information
+# package_version     -  contains package version (string)
+# unit_state_active   -  contains systemd unit state (systemctl is-active) 
+# unit_state_enabled  -  contains systemd unit state (systemctl is-enabled) 
+# tool_profile        -  contains actual profile (string) for each tool
+declare -A os_version package_version unit_state_active unit_state_enabled tool_profile
+
+color=1     # we like it colorful
+
+function header() { 
+    local len=${#1}
+    echo -e "\n${1}"
+    # shellcheck disable=SC2046
+    printf '=%.s' $(eval "echo {1.."$((len))"}")
+    echo
+}
+
+function print_ok() {
+    local col_on col_off
+    [ -t 1 ] || color=0  # Disable color if we run in a pipe
+    if [ ${color} -eq 1 ] ; then
+        col_on="\033[0;32m"
+        col_off="\033[0m"
+    else
+        col_on=""
+        col_off=""
+    fi
+    echo -e "[ ${col_on}OK${col_off} ] ${1}"
+}
+
+function print_fail() {
+    local col_on col_off bold_on
+    [ -t 1 ] || color=0  # Disable color if we run in a pipe
+    if [ ${color} -eq 1 ] ; then
+        col_on="\033[0;31m"
+        col_off="\033[0m"
+        bold_on="\033[1m"
+    else
+        col_on=""
+        col_off=""
+        bold_on=""
+    fi
+    echo -e "[${col_on}FAIL${col_off}] ${1}${bold_on}\t-> ${2}${col_off}"
+}
+
+function print_warn() {
+    local col_on col_off bold_on
+    [ -t 1 ] || color=0  # Disable color if we run in a pipe
+    if [ ${color} -eq 1 ] ; then
+        col_on="\033[0;33m"
+        col_off="\033[0m"
+        bold_on="\033[1m"
+    else
+        col_on=""
+        col_off=""
+        bold_on=""
+    fi
+    echo -e "[${col_on}WARN${col_off}] ${1}${bold_on}\t-> ${2}${col_off}"
+}
+
+function print_note() {
+    local col_on col_off
+    [ -t 1 ] || color=0  # Disable color if we run in a pipe
+    if [ ${color} -eq 1 ] ; then
+        col_on="\033[0;37m"
+        col_off="\033[0m"
+    else
+        col_on=""
+        col_off=""
+    fi
+    echo -e "[${col_on}NOTE${col_off}] ${1}"
+}
+
+function get_os_version() {
+    # Params:   -
+    # Output:   -
+    # Exitcode: -
+    #
+    # Determines the OS version as string for each PACKAGE.
+    # Not installed packages will have an empty string as version.
+    #
+    # The function updates the associative array "os_version".
+    #
+    # Requires:-
+
+    local VERSION_ID
+    
+    eval "$(grep ^VERSION_ID= /etc/os-release)"
+    os_version['release']="${VERSION_ID%.*}"
+    os_version['servicepack']="${VERSION_ID#*.}"
+}
+
+function get_package_versions() {
+    # Params:   PACKAGE...
+    # Output:   -
+    # Exitcode: -
+    #
+    # Determines package version as string for each PACKAGE.
+    # Not installed packages will have an empty string as version.
+    #
+    # The function updates the associative array "package_version".
+    #
+    # Requires:-
+
+    local package version
+    for package in "${@}" ; do
+        if version=$(rpm -q --qf '%{version}' "${package}" 2>&1) ; then
+            package_version["${package}"]=${version}
+        else
+            package_version["${package}"]=''
+        fi
+    done
+}
+
+function get_unit_states() {
+    # Params:   UNIT...
+    # Output:   -
+    # Exitcode: -
+    #
+    # Determines the state (is-active/is-enabled) for each UNIT.
+    # A missing state is reported as "missing".
+    #
+    # The function updates the associative arrays "unit_state_active" and "unit_state_enabled".
+    #
+    # Requires: -
+
+    local unit state_active state_enabled
+    for unit in "${@}" ; do
+        state_active=$(systemctl is-active "${unit}" 2> /dev/null)
+        state_enabled=$(systemctl is-enabled "${unit}" 2> /dev/null)
+        unit_state_active["${unit}"]=${state_active:-missing}
+        unit_state_enabled["${unit}"]=${state_enabled:-missing}
+    done
+}
+
+function get_tool_profiles() {
+    # Params:   -
+    # Output:   -
+    # Exitcode: -
+    #
+    # Determines the current profile of tuned and sapconf. 
+    # A missing profile (file) is reported as "missing".
+    #
+    # The function updates the associative array "tool_profile".
+    #
+    # Requires: -
+
+    local active_profile sapconf_profile_file
+    active_profile=''
+    [ -e /etc/tuned/active_profile ] && active_profile=$(< /etc/tuned/active_profile)
+    tool_profile['tuned']="${active_profile:-missing}"
+
+    active_profile=''
+    sapconf_profile_file='/run/sapconf_act_profile'
+    if [ -e "${sapconf_profile_file}" ] ; then 
+        active_profile=$(< "${sapconf_profile_file}")
+    else
+        active_profile="(no profile file ${sapconf_profile_file})"
+    fi
+    tool_profile['sapconf']="${active_profile:-missing}"
+}
+
+function collect_data() {
+    # Params:   -
+    # Output:   -
+    # Exitcode: -
+    #
+    # Calls various functions to collect data.
+    #
+    # Requires: get_os_version()
+    #           get_package_versions()
+    #           get_unit_states()
+    #           get_tool_profiles()
+    #           configured_saptune_version()
+
+    # Collect OS version.
+    get_os_version
+
+    # Collect data about some packages.
+    get_package_versions sapconf saptune tuned
+
+    # Collect data about some systemd services.
+    get_unit_states sapconf.service tuned.service saptune.service
+
+    # Collect the profiles of various tools.
+    get_tool_profiles
+
+}
+
+function compile_filelists() {
+    # Params:   VERSIONTAG
+    # Output:   warnings, fails and notes with print_warn(), print_fail() and print_note()
+    # Exitcode: -
+    #
+    # Checks the existence of mandatory and invalid files for sapconf and saptune 
+    # (depending on SLES release and VERSIONTAG) and prints warnings or fails.
+    #
+    # The following strings for VERSIONTAG are allowed: "sapconf-5"
+    #
+    # Also for all mandatory and invalid files, we search for RPM leftovers (.rpmnew/.rpmsave). 
+    #
+    # IMPORTANT:
+    #   When adding new files every file must be listed in either of the arrays mandatory_files"
+    #   or "invalid_files" but in *each* SLES release and tag section!
+    #   
+    # The function updates the variables "warnings" and "fails" used in check_sapconf(). 
+    #
+    # Requires: print_warn(),print_fail() and print_note()
+
+    local VERSION_ID tag="${1}" mandatory_files invalid_files rpm_leftovers
+    declare -a mandatory_files invalid_files rpm_leftovers
+
+    eval "$(grep ^VERSION_ID= /etc/os-release)"
+    case ${VERSION_ID} in 
+        12*)
+            case ${tag} in 
+                sapconf-5)
+                    mandatory_files=( '/etc/sysconfig/sapconf' '/etc/sysconfig/sapnote-1680803' '/etc/sysconfig/sapnote-bobj')
+                    invalid_files=( '/etc/sysconfig/sapnote-1557506' '/etc/tuned/sap-netweaver' '/etc/tuned/sap-hana' '/etc/tuned/sap-ase' '/etc/tuned/sap-bobj' '/etc/tuned/sapconf')
+                    ;;
+            esac
+            ;;
+        15*)
+            case ${tag} in 
+                sapconf-5)
+                    mandatory_files=( '/etc/sysconfig/sapconf' )
+                    invalid_files=( '/etc/sysconfig/sapnote-1557506' '/etc/sysconfig/sapnote-1680803' '/etc/sysconfig/sapnote-bobj' '/etc/tuned/sap-netweaver' '/etc/tuned/sap-hana' '/etc/tuned/sap-ase' '/etc/tuned/sap-bobj' '/etc/tuned/sapconf')
+            esac
+            ;;
+    esac
+
+    # Now check the existence of mandatory and invalid files and print warnings and fails.    
+    for ((i=0;i<${#mandatory_files[@]};i++)) ; do
+        if [ ! -e "${mandatory_files[i]}" ] ; then 
+            print_fail "${mandatory_files[i]} is missing, but a mandatory file." "Check your installation!"
+            ((fails++))
+        fi
+        rpm_leftovers+=("${mandatory_files[i]}.rpmsave" "${mandatory_files[i]}.rpmnew" )
+    done 
+    for ((i=0;i<${#invalid_files[@]};i++)) ; do
+        if [ -e "${invalid_files[i]}" ] ; then 
+            print_warn "${invalid_files[i]} is not used by this version. Maybe a leftover from an update?" "Check the content and remove it."
+            ((warnings++))
+        fi
+        rpm_leftovers+=("${invalid_files[i]}.rpmsave" "${invalid_files[i]}.rpmnew" )
+    done 
+    
+    # Print a warning if we have found RPM leftovers!
+    for ((i=0;i<${#rpm_leftovers[@]};i++)) ; do
+        if [ -e "${rpm_leftovers[i]}" ] ; then 
+            print_warn "${rpm_leftovers[i]} found. This is a leftover from a package update!" "Check the content and remove it."
+            ((warnings++))
+        fi
+    done 
+}
+
+function check_sapconf() {
+    # Checks if sapconf is installed correctly.
+
+    local fails=0 warnings=0 version_tag
+
+    # We can stop, if sapconf is not installed.
+    if [ -z "${package_version['sapconf']}" ] ; then
+        echo "sapconf is not installed" 
+        return 2    
+    fi
+
+    # Depending on the sapconf version we have to do different things. 
+    #   <  5    not supported by this script
+    #   >= 5    we check
+    case "${package_version['sapconf']}" in
+        5.*)  
+            version_tag='sapconf-5'
+            ;;
+        *)  
+            print_fail "sapconf version ${package_version['sapconf']} is unknown to this script! Exiting."
+            return 2 
+            ;;
+    esac
+
+    # Let's test.
+    header "Checking sapconf"
+    print_ok "sapconf package has version ${package_version['sapconf']}"
+
+    # Checking status of saptune.service.
+    if [ -n "${package_version['saptune']}" ] ; then 
+        case "${unit_state_active['saptune.service']}" in
+            inactive)
+                print_ok "saptune.service is inactive"
+                ;;
+            active)
+                print_fail "saptune.service is ${unit_state_active['saptune.service']}" "Running sapconf and saptune together is not allowed! Run 'systemctl stop saptune.service'."
+                ((fails++))
+                ;;
+        esac
+        case "${unit_state_enabled['saptune.service']}" in
+            enabled)
+                print_fail "saptune.service is enabled" "Running sapconf and saptune together is not allowed! Run 'systemctl disable saptune.service'."
+                ((fails++))
+                ;;
+            *)
+                print_ok "saptune.service is ${unit_state_enabled['saptune.service']}"
+                ;;
+        esac
+    fi
+
+    # Checking status of tuned.service.
+    if [ -n "${package_version['tuned']}" ] ; then 
+        case "${tool_profile['tuned']}" in
+            saptune)
+                case "${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']}" in 
+                    enabled/active)
+                        print_fail "tuned.service is ${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']} with profile '${tool_profile['tuned']}'" "Run 'saptune daemon stop'."
+                        ((fails++))
+                        ;;
+                    disabled/active)
+                        print_fail "tuned.service is ${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']} with profile '${tool_profile['tuned']}'" "Run 'saptune daemon stop'."
+                        ((fails++))
+                        ;;
+                    enabled/inactive)
+                        print_fail "tuned.service is ${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']} with profile '${tool_profile['tuned']}'" "Run 'saptune daemon stop'."
+                        ((fails++))
+                        ;;
+                    disabled/inactive)
+                        print_warn "tuned.service is ${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']} with profile '${tool_profile['tuned']}'" "Be careful not to start or enable tuned."
+                        ((warnings++))
+                        ;;
+                    *)
+                        print_fail "tuned.service has a strange status: ${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']}" "Please check."
+                        ((fails++))
+                        ;;
+                esac
+                ;;
+            *)
+                case "${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']}" in 
+                    enabled/active)
+                        print_warn "tuned.service is ${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']} with profile '${tool_profile['tuned']}" "Sapconf does not require tuned! Run 'systemctl stop tuned.service', if not needed otherwise."
+                        ((warnings++)) 
+                        ;;
+                    disabled/active)
+                        print_warn "tuned.service is ${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']} with profile '${tool_profile['tuned']}" "Sapconf does not require tuned! Run 'systemctl stop tuned.service', if not needed otherwise."
+                        ((warnings++))  
+                        ;;
+                    enabled/inactive)
+                        print_warn "tuned.service is ${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']} with profile '${tool_profile['tuned']}" "Sapconf does not require tuned! Run 'systemctl stop tuned.service', if not needed otherwise."
+                        ((warnings++))  
+                        ;;
+                    disabled/inactive)
+                        print_ok "tuned.service is ${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']}"
+                        ;;
+                    *)
+                        print_fail "tuned.service has a strange status: ${unit_state_enabled['tuned.service']}/${unit_state_active['tuned.service']}" "Please investigate!"
+                        ((fails++))
+                        ;;
+                esac
+                ;;
+        esac
+    fi
+
+    # Checking status of sapconf.service.
+    case "${unit_state_active['sapconf.service']}" in 
+        active)
+            print_ok "sapconf.service is active"
+
+            # Checking the sapconf profile (SLES 12).
+            case "${os_version['release']}" in 
+                12)
+                    # Checking the sapconf profile.
+                    case "${tool_profile['sapconf']}" in
+                        "(no profile file)")
+                            ;;
+                        sapconf-netweaver|sapconf-hana|sapconf-bobj|sapconf-ase)
+                            print_ok "sapconf profile '${tool_profile['sapconf']#sapconf-}' is set"
+                            ;; 
+                        missing)
+                            print_fail "No sapconf profile is set!" "Please set a sapconf profile by running 'sapconf stop && sapconf <your choosen profile>'"
+                            ((fails++))
+                            ;;
+                        *)
+                            print_fail "No sapconf profile: ${tool_profile['sapconf']}" "Please set a sapconf profile by running 'sapconf stop && sapconf <your choosen profile>'"
+                            ((fails++))
+                            ;;
+                    esac
+                    ;;
+            esac
+            ;;
+        *)  
+            print_fail "sapconf.service is ${unit_state_active['sapconf.service']}" "Run 'systemctl start sapconf.service' to activate the tuning now."
+            ((fails++))
+            ;;
+    esac
+    case "${unit_state_enabled['sapconf.service']}" in 
+        enabled)
+            print_ok "sapconf.service is enabled"
+            ;;
+        *)
+            print_fail "sapconf.service is ${unit_state_enabled['sapconf.service']}" "Run 'systemctl enable sapconf.service' to activate sapconf at boot."
+            ((fails++))
+            ;;
+    esac
+
+
+
+    # Check config files and rpm leftovers.
+    compile_filelists ${version_tag}
+
+    # Summary.
+    echo
+    [ "${warnings}" -gt 0 ] && echo "${warnings} warning(s) have been found."
+    [ "${fails}" -gt 0 ] && echo "${fails} error(s) have been found."
+    if [ "${fails}" -gt 0 ] ; then
+        echo "Sapconf will not work properly!"
+        return 1
+    else 
+        if [ "${warnings}" -gt 0 ] ; then
+            echo "Sapconf should work properly, but better investigate!"
+        else
+            echo "Sapconf is set up correctly."
+        fi
+    fi
+    return 0   
+}
+
+# --- MAIN ---
+
+# Introduction.
+echo -e "\nThis is ${0##*/} v${version}.\n"
+echo -e "It verifies if sapconf is set up correctly and will give advice to do so."
+echo -e "Please keep in mind:"
+echo -e " - This tool does not check, if the tuning itself works correctly."
+echo -e " - Follow the hints from top to down to minimize side effects.\n"
+
+# Determine if we are running a SLES.
+eval "$(grep ^ID= /etc/os-release)"
+[ "${ID}" != "sles" ] && { echo "Only SLES is supported! Your OS ID is ${ID}! Exiting." ; exit 2 ; }
+
+# Check parameters.
+if [ -n "${1}" ] ; then
+    echo "Usage: ${0##*/}"
+    exit 3
+fi
+
+
+collect_data
+check_sapconf
+
+# Bye.
+exit $?
