@@ -527,7 +527,7 @@ chk_active_saptune() {
             txt="is active"
         fi
     fi
-    if [[ $(ls -A /var/lib/saptune/saved_state 2>/dev/null) ]]; then
+    if [[ $(ls -A /var/lib/saptune/saved_state 2>/dev/null) || $(ls -A /run/saptune/saved_state 2>/dev/null) ]]; then
         used=true
         if [ -n "$txt" ]; then
             txt=$txt" and has applied notes/solutions"
