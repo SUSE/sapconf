@@ -33,9 +33,9 @@ start() {
     # prevent a second start (apply of values) as this will override the
     # saved old values of the parameters and reverting back to the
     # original state will be impossible
-    [ -f /var/run/sapconf/active ] && log "sapconf already active, no second start supported" && exit 0
-    [ ! -d /var/run/sapconf ] && mkdir -p /var/run/sapconf
-    touch /var/run/sapconf/active
+    [ -f /run/sapconf/active ] && log "sapconf already active, no second start supported" && exit 0
+    [ ! -d /run/sapconf ] && mkdir -p /run/sapconf
+    touch /run/sapconf/active
 
     log "--- Going to apply SAP tuning techniques"
     # Common tuning techniques apply to HANA and NetWeaver
@@ -140,7 +140,7 @@ stop() {
     log "--- "
     log "--- stopping sapconf ...."
     log "--- "
-    [ ! -f /var/run/sapconf/active ] && log "no active sapconf tuning, so nothing to revert" && exit 0
+    [ ! -f /run/sapconf/active ] && log "no active sapconf tuning, so nothing to revert" && exit 0
 
     log "--- Going to revert SAP tuning parameters"
 
@@ -192,7 +192,7 @@ stop() {
         fi
     fi
 
-    rm -f /var/run/sapconf/active
+    rm -f /run/sapconf/active
     log "--- Finished reverting SAP tuning parameters"
 }
 

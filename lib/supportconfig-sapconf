@@ -88,7 +88,7 @@ display_systemd_status tuned
 display_cmd tuned-adm list
 display_file_stat /etc/tuned/active_profile
 display_file /etc/tuned/active_profile
-display_file_stat /var/run/tuned/
+display_file_stat /run/tuned/
 display_file_stat /usr/lib/tuned/sapconf/script.sh
 display_log /var/log/tuned/tuned.log*
 
@@ -96,7 +96,7 @@ display_package_info sapconf
 display_file /var/log/sapconf.log
 display_file /etc/sysconfig/sapconf
 display_systemd_status sapconf
-display_file_stat /var/run/sapconf/active
+display_file_stat /run/sapconf/active
 display_file_stat /run/sapconf_act_profile
 display_file /run/sapconf_act_profile
 display_file_stat /var/lib/sapconf/last_profile
