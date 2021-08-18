@@ -457,7 +457,7 @@ chk_active_saptune() {
             txt="is active"
         fi
     fi
-    if [[ $(ls -A /var/lib/saptune/saved_state 2>/dev/null) ]]; then
+    if [[ $(ls -A /var/lib/saptune/saved_state 2>/dev/null) || $(ls -A /run/saptune/saved_state 2>/dev/null) ]]; then
         used=true
         if [ -n "$txt" ]; then
             txt=$txt" and has applied notes/solutions"
@@ -467,7 +467,7 @@ chk_active_saptune() {
     fi
     if $enabled || $active || $used; then
         log "ATTENTION: saptune $txt, so refuse any action"
-        rm -f /var/run/sapconf/active
+        rm -f /run/sapconf/active
         return 1
     fi
     return 0
