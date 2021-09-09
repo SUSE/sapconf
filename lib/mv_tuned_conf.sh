@@ -22,7 +22,7 @@ for prof in sapconf sap-hana sap-netweaver sap-ase sap-bobj; do
     fi
 done
 
-if [ -f /etc/tuned/sapconf/tuned.conf ]; then
+if [ -f /etc/tuned/sapconf/tuned.conf]; then
     CUSTOM_TCONF=/etc/tuned/sapconf/tuned.conf
 fi
 if [ -f /etc/tuned/sap-hana/tuned.conf ]; then
