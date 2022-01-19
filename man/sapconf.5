@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2017-2020 SUSE LLC
+.\" * Copyright (c) 2017-2022 SUSE LLC
 .\" * Authors: Angela Briel
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 5 "May 2020" "sapconf configuration file"
+.TH sapconf 5 "January 2022" "sapconf configuration file"
 .SH NAME
 sapconf \- central configuration file of sapconf
 
@@ -374,7 +374,17 @@ With the new introduced multi-queue scheduler for block layer devices the recomm
 
 So IO_SCHEDULER can now contain a list of possible schedulers, separated by blanks, which are checked from left to right. The first one which is available in /sys/block/<device>/queue/scheduler will be used as new scheduler setting for the respective block device.
 
-When set, all block devices on the system will be switched to one of the chosen schedulers.
+When set, all block devices on the system \fBvalid\fP for this sort of action will be switched to one of the chosen schedulers.
+
+The following rules apply for \fBvalid\fP devices:
+.RS 4
+.IP \[bu]
+all multipath devices (dm-*, if mpath-, but not LVM- or other dm-)
+.IP \[bu]
+all physical disks (indicated by device/type=0 or names like nvme*, vd*)
+.br
+\fBexcept\fP they are part of a device mapper construct (like mpath-).
+.RE
 .PP
 .RS 4
 Set in the common part (tune_preparation) of the scripting

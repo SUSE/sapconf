@@ -232,6 +232,55 @@ is_valid_scheduler() {
     return 1
 }
 
+# get the valid block devices for setting the scheduler
+get_valid_block_devices() {
+    # read block devices from /sys/block
+    candidates=()
+    excludedevs=()
+    for i in /sys/block/*; do
+        skip=false
+        dev=${i##*/}
+        if [ -f /sys/block/"$dev"/dm/uuid ]; then
+            if grep '^mpath-' /sys/block/"$dev"/dm/uuid >/dev/null 2>&1; then
+                candidates+=("$dev")
+                for s in /sys/block/"$dev"/slaves/*; do
+                    excludedevs+=("${s##*/}")
+                done
+            else
+                dm=$(sed 's/\(.*\)-.*/\1/' /sys/block/"$dev"/dm/uuid)
+                log "skipping device '$dev'($dm), not applicable"
+            fi
+        else
+            # check block device type.
+            if [ ! -f /sys/block/"$dev"/device/type ]; then
+                skip=true
+            elif [[ $(cat /sys/block/"$dev"/device/type) -ne 0 ]]; then
+                skip=true
+            fi
+            # virtio block devices (vd* and xvd*) and NVME devices do not have
+            # a 'type' file, need workaround
+            [[ "$dev" =~ ^x?vd* || "$dev" =~ ^nvme[0-9]+n[0-9]+$ ]] && skip=false
+            if $skip; then
+                log "skipping device '$dev', not applicable"
+                continue
+            fi
+            candidates+=("$dev")
+        fi
+    done
+    for bdev in "${candidates[@]}"; do
+        exclude=false
+        for edev in "${excludedevs[@]}"; do
+            if [ "$bdev" == "$edev" ]; then
+                log "skipping device '$bdev', not applicable for dm slaves"
+                exclude=true
+                break
+            fi
+        done
+        ! $exclude && disklist="$disklist $bdev"
+    done
+    echo "$disklist"
+}
+
 # set block device scheduler
 set_scheduler() {
     if [ -z "$IO_SCHEDULER" ]; then
@@ -239,22 +288,7 @@ set_scheduler() {
         log "Leaving block device scheduler settings unchanged"
         return 0
     fi
-    # read block devices from /sys/block
-    #for i in $(eval LANG=C ls -1 /sys/block 2>/dev/null); do
-    for i in /sys/block/*; do
-        skip=false
-        dev=${i##*/}
-        # check block device type.
-        if [ ! -f /sys/block/"$dev"/device/type ]; then
-            skip=true
-        elif [[ $(cat /sys/block/"$dev"/device/type) -ne 0 ]]; then
-            skip=true
-        fi
-        # virtio block devices do not have a 'type' file, need workaround
-        [[ "$dev" =~ vd* ]] && skip=false
-        $skip && continue
-
-        # Only set scheduler for TYPE_DISK / 0x00
+    for dev in $(get_valid_block_devices); do
         # check, if IO_SCHEDULER includes a valid scheduler
         # use the first valid scheduler as new scheduler
         if ! new_sched=$(is_valid_scheduler "$dev"); then
@@ -472,7 +506,7 @@ restore_governor() {
 
 # set performance settings according to SAP Note 2205917
 set_performance_settings() {
-    # read performace related requirements from the common configuration file
+    # read performance related requirements from the common configuration file
     # sysconfig/sapconf
     if [ -r /etc/sysconfig/sapconf ]; then
         source_sysconfig /etc/sysconfig/sapconf
