@@ -77,7 +77,7 @@ if ! $SCCU1; then
 #' $SN
 fi
 
-# additonal changed comments as requested in bsc#1096498
+# additional changed comments as requested in bsc#1096498
 if ! $SCCU1_15; then
     sed -i 's/, SAP Note 1557506$//' $SN
     sed -i 's/2205917/2684254/' $SN

@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/SUSE/sapconf.svg?branch=master)](https://travis-ci.org/SUSE/sapconf)
+[![shellcheck](https://github.com/SUSE/sapconf/actions/workflows/shellcheck.yml/badge.svg)](https://github.com/SUSE/sapconf/actions/workflows/shellcheck.yml)
 
 # sapconf
 The utility adjusts operating system parameters, such as kernel tuning settings and resource limits, to allow running various SAP solutions at satisfactory performance.

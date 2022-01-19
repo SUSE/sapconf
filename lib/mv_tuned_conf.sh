@@ -11,7 +11,7 @@
 
 CUSTOM_TCONF=""
 SN=/etc/sysconfig/sapconf
-# check, if the tuned profile directories already availabe in the saved_config
+# check, if the tuned profile directories already available in the saved_config
 # area. If yes, may be backup/restore has added the already removed directories
 # again. So do not process the tuned profile values again to not harm the
 # current configuration in /etc/sysconfig/sapconf
