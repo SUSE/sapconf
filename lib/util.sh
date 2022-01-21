@@ -311,12 +311,12 @@ set_force_latency() {
             save_value "${cpu}"_"${cstate}" "$old_state"
             # read /sys/devices/system/cpu/cpu*/cpuidle/state*/latency
             latency=$(cat "$cstate_path"/latency)
-            if [ "$latency" -ge "$FORCE_LATENCY" ]; then
+            if [ "$latency" -gt "$FORCE_LATENCY" ]; then
                 # set new latency states
                 log "Disable idle state for cpu '${cpu}' and state '${cstate}'"
                 echo 1 > "$cstate_path"/disable
             fi
-            if [[ $latency -lt $FORCE_LATENCY && $old_state -eq 1 ]]; then
+            if [[ $latency -le $FORCE_LATENCY && $old_state -eq 1 ]]; then
                 # reset previous set latency state
                 log "Enable idle state for cpu '${cpu}' and state '${cstate}'"
                 echo 0 > "$cstate_path"/disable
