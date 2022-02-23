@@ -78,16 +78,16 @@ SEMMNI=32000
 #
 # Maximum number of open files for SAP application groups sapsys, sdba, and dba.
 # Consult with manual page limits.conf(5) for the correct syntax.
-# Set to 65536
+# Set to 1048576 (as recommended by revision 6 of the SAP Note)
 #
-# SAP Note 1771258
+# SAP Note 1771258 (rev. 6 from 05.11.2021)
 #
-LIMIT_1="@sapsys soft nofile 65536"
-LIMIT_2="@sapsys hard nofile 65536"
-LIMIT_3="@sdba soft nofile 65536"
-LIMIT_4="@sdba hard nofile 65536"
-LIMIT_5="@dba soft nofile 65536"
-LIMIT_6="@dba hard nofile 65536"
+LIMIT_1="@sapsys soft nofile 1048576"
+LIMIT_2="@sapsys hard nofile 1048576"
+LIMIT_3="@sdba soft nofile 1048576"
+LIMIT_4="@sdba hard nofile 1048576"
+LIMIT_5="@dba soft nofile 1048576"
+LIMIT_6="@dba hard nofile 1048576"
 
 # vm.max_map_count
 # The value is the maximum number of memory map areas a process may have.
