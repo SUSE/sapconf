@@ -69,17 +69,17 @@ Linux kernel setting, set in the common part (tune_preparation) of the scripting
 SAP Note 941735, HANA Administration Guide
 .RE
 .PP
-\fBLIMIT_1="@sapsys soft nofile 65536"\fP
+\fBLIMIT_1="@sapsys soft nofile 1048576"\fP
 .br
-\fBLIMIT_2="@sapsys hard nofile 65536"\fP
+\fBLIMIT_2="@sapsys hard nofile 1048576"\fP
 .br
-\fBLIMIT_3="@sdba soft nofile 65536"\fP
+\fBLIMIT_3="@sdba soft nofile 1048576"\fP
 .br
-\fBLIMIT_4="@sdba hard nofile 65536"\fP
+\fBLIMIT_4="@sdba hard nofile 1048576"\fP
 .br
-\fBLIMIT_5="@dba soft nofile 65536"\fP
+\fBLIMIT_5="@dba soft nofile 1048576"\fP
 .br
-\fBLIMIT_6="@dba hard nofile 65536"\fP
+\fBLIMIT_6="@dba hard nofile 1048576"\fP
 .RS 4
 Maximum number of open files for SAP application groups sapsys, sdba, and dba.
 Consult with manual page limits.conf(5) for the correct syntax.
@@ -88,7 +88,7 @@ Limit settings in \fB/etc/security/limits.d/sapconf-nofile.conf\fP during the co
 .br
 This file will be removed during revert (change of tuning profile or stop of sapconf service.) and during the sapconf package removal.
 .br
-SAP Note 1771258
+SAP Note 1771258 (rev. 6 from 05.11.2021)
 .RE
 .RE
 .PP
