@@ -20,8 +20,8 @@
 # It will not dig deeper to check if the tuning itself is working.
 #
 # exit codes:       0   All checks ok. Sapconf has been set up correctly.
-#                   1   Some warnings occured. Sapconf should work, but better check manually.
-#                   2   Some errors occured. Sapconf will not work.
+#                   1   Some warnings occurred. Sapconf should work, but better check manually.
+#                   2   Some errors occurred. Sapconf will not work.
 #                   3   Wrong parameters given to the tool on commandline.
 #
 # Changelog:
@@ -407,11 +407,11 @@ function check_sapconf() {
                             print_ok "sapconf profile '${tool_profile['sapconf']#sapconf-}' is set"
                             ;; 
                         missing)
-                            print_fail "No sapconf profile is set!" "Please set a sapconf profile by running 'sapconf stop && sapconf <your choosen profile>'"
+                            print_fail "No sapconf profile is set!" "Please set a sapconf profile by running 'sapconf stop && sapconf <your chosen profile>'"
                             ((fails++))
                             ;;
                         *)
-                            print_fail "No sapconf profile: ${tool_profile['sapconf']}" "Please set a sapconf profile by running 'sapconf stop && sapconf <your choosen profile>'"
+                            print_fail "No sapconf profile: ${tool_profile['sapconf']}" "Please set a sapconf profile by running 'sapconf stop && sapconf <your chosen profile>'"
                             ((fails++))
                             ;;
                     esac

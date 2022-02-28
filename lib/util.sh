@@ -200,6 +200,55 @@ is_valid_scheduler() {
     return 1
 }
 
+# get the valid block devices for setting the scheduler
+get_valid_block_devices() {
+    # read block devices from /sys/block
+    candidates=()
+    excludedevs=()
+    for i in /sys/block/*; do
+        skip=false
+        dev=${i##*/}
+        if [ -f /sys/block/"$dev"/dm/uuid ]; then
+            if grep '^mpath-' /sys/block/"$dev"/dm/uuid >/dev/null 2>&1; then
+                candidates+=("$dev")
+                for s in /sys/block/"$dev"/slaves/*; do
+                    excludedevs+=("${s##*/}")
+                done
+            else
+                dm=$(sed 's/\(.*\)-.*/\1/' /sys/block/"$dev"/dm/uuid)
+                log "skipping device '$dev'($dm), not applicable"
+            fi
+        else
+            # check block device type.
+            if [ ! -f /sys/block/"$dev"/device/type ]; then
+                skip=true
+            elif [[ $(cat /sys/block/"$dev"/device/type) -ne 0 ]]; then
+                skip=true
+            fi
+            # virtio block devices (vd* and xvd*) and NVME devices do not have
+            # a 'type' file, need workaround
+            [[ "$dev" =~ ^x?vd* || "$dev" =~ ^nvme[0-9]+n[0-9]+$ ]] && skip=false
+            if $skip; then
+                log "skipping device '$dev', not applicable"
+                continue
+            fi
+            candidates+=("$dev")
+        fi
+    done
+    for bdev in "${candidates[@]}"; do
+        exclude=false
+        for edev in "${excludedevs[@]}"; do
+            if [ "$bdev" == "$edev" ]; then
+                log "skipping device '$bdev', not applicable for dm slaves"
+                exclude=true
+                break
+            fi
+        done
+        ! $exclude && disklist="$disklist $bdev"
+    done
+    echo "$disklist"
+}
+
 # set block device scheduler
 set_scheduler() {
     if [ -z "$IO_SCHEDULER" ]; then
@@ -207,22 +256,8 @@ set_scheduler() {
         log "Leaving block device scheduler settings unchanged"
         return 0
     fi
-    # read block devices from /sys/block
-    #for i in $(eval LANG=C ls -1 /sys/block 2>/dev/null); do
-    for i in /sys/block/*; do
-        skip=false
-        dev=${i##*/}
-        # check block device type.
-       if [ ! -f /sys/block/"$dev"/device/type ]; then
-            skip=true
-        elif [[ $(cat /sys/block/"$dev"/device/type) -ne 0 ]]; then
-            skip=true
-        fi
-        # virtio block devices do not have a 'type' file, need workaround
-        [[ "$dev" =~ vd* ]] && skip=false
-        $skip && continue
 
-        # Only set scheduler for TYPE_DISK / 0x00
+    for dev in $(get_valid_block_devices); do
         # check, if IO_SCHEDULER includes a valid scheduler
         # use the first valid scheduler as new scheduler
         if ! new_sched=$(is_valid_scheduler "$dev"); then
@@ -276,12 +311,12 @@ set_force_latency() {
             save_value "${cpu}"_"${cstate}" "$old_state"
             # read /sys/devices/system/cpu/cpu*/cpuidle/state*/latency
             latency=$(cat "$cstate_path"/latency)
-            if [ "$latency" -ge "$FORCE_LATENCY" ]; then
+            if [ "$latency" -gt "$FORCE_LATENCY" ]; then
                 # set new latency states
                 log "Disable idle state for cpu '${cpu}' and state '${cstate}'"
                 echo 1 > "$cstate_path"/disable
             fi
-            if [[ $latency -lt $FORCE_LATENCY && $old_state -eq 1 ]]; then
+            if [[ $latency -le $FORCE_LATENCY && $old_state -eq 1 ]]; then
                 # reset previous set latency state
                 log "Enable idle state for cpu '${cpu}' and state '${cstate}'"
                 echo 0 > "$cstate_path"/disable

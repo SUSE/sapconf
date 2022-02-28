@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2017-2020 SUSE LLC
+.\" * Copyright (c) 2017-2022 SUSE LLC
 .\" * Authors: Angela Briel
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 5 "March 2020" "sapconf configuration file"
+.TH sapconf 5 "January 2022" "sapconf configuration file"
 .SH NAME
 sapconf \- central configuration file of sapconf
 
@@ -69,17 +69,17 @@ Linux kernel setting, set in the common part (tune_preparation) of the scripting
 SAP Note 941735, HANA Administration Guide
 .RE
 .PP
-\fBLIMIT_1="@sapsys soft nofile 65536"\fP
+\fBLIMIT_1="@sapsys soft nofile 1048576"\fP
 .br
-\fBLIMIT_2="@sapsys hard nofile 65536"\fP
+\fBLIMIT_2="@sapsys hard nofile 1048576"\fP
 .br
-\fBLIMIT_3="@sdba soft nofile 65536"\fP
+\fBLIMIT_3="@sdba soft nofile 1048576"\fP
 .br
-\fBLIMIT_4="@sdba hard nofile 65536"\fP
+\fBLIMIT_4="@sdba hard nofile 1048576"\fP
 .br
-\fBLIMIT_5="@dba soft nofile 65536"\fP
+\fBLIMIT_5="@dba soft nofile 1048576"\fP
 .br
-\fBLIMIT_6="@dba hard nofile 65536"\fP
+\fBLIMIT_6="@dba hard nofile 1048576"\fP
 .RS 4
 Maximum number of open files for SAP application groups sapsys, sdba, and dba.
 Consult with manual page limits.conf(5) for the correct syntax.
@@ -88,7 +88,7 @@ Limit settings in \fB/etc/security/limits.d/sapconf-nofile.conf\fP during the co
 .br
 This file will be removed during revert (change of tuning profile or stop of sapconf service.) and during the sapconf package removal.
 .br
-SAP Note 1771258
+SAP Note 1771258 (rev. 6 from 05.11.2021)
 .RE
 .RE
 .PP
@@ -312,7 +312,17 @@ With the new introduced multi-queue scheduler for block layer devices the recomm
 
 So IO_SCHEDULER can now contain a list of possible schedulers, separated by blanks, which are checked from left to right. The first one which is available in /sys/block/<device>/queue/scheduler will be used as new scheduler setting for the respective block device.
 
-When set, all block devices on the system will be switched to one of the chosen schedulers.
+When set, all block devices on the system \fBvalid\fP for this sort of action will be switched to one of the chosen schedulers.
+
+The following rules apply for \fBvalid\fP devices:
+.RS 4
+.IP \[bu]
+all multipath devices (dm-*, if mpath-, but not LVM- or other dm-)
+.IP \[bu]
+all physical disks (indicated by device/type=0 or names like nvme*, vd*)
+.br
+\fBexcept\fP they are part of a device mapper construct (like mpath-).
+.RE
 .PP
 .RS 4
 Set in the common part (tune_preparation) of the scripting
