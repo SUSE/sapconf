@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2015-2020 SUSE LLC
+.\" * Copyright (c) 2015-2022 SUSE LLC
 .\" * Authors: Howard Guo
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 7 "June 2020" "util-linux" "System Administration"
+.TH sapconf 7 "January 2022" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -26,7 +26,7 @@ sapconf is \fBno longer\fP working on top of the tuned daemon.
 .SH CONFIGURATION
 The main customization can be done in the central configuration file \fI/etc/sysconfig/sapconf\fP of sapconf.
 .br
-All parameters to be set by sapconf are descibed in detail within this file and will be read from this file.
+All parameters to be set by sapconf are described in detail within this file and will be read from this file.
 .br
 Bear in mind: Higher or lower system values set by the system, the SAP installer or by the administrator using sysctl command or sysctl configuration files will be overwritten by sapconf, if they are part of the sapconf sysconfig file.
 .br
@@ -157,7 +157,7 @@ The log file of sapconf will not be removed during package removal.
 .RS 4
 central configuration file
 .br
-Here you can find all parameters, wich are affected by sapconf. The actual setting value, the source SAP Note, a short explanation and where this parameter is set.
+Here you can find all parameters, which are affected by sapconf. The actual setting value, the source SAP Note, a short explanation and where this parameter is set.
 .br
 If you change parameter values please don't forget to reload sapconf service to get the changes take effect.
 .PP
