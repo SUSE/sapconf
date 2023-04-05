@@ -579,3 +579,19 @@ chk_active_saptune() {
     fi
     return 0
 }
+
+# check IGNORE_RELOAD setting in the common configuration file sysconfig/sapconf
+chk_reload_lock() {
+    (if [ -r /etc/sysconfig/sapconf ]; then
+        source_sysconfig /etc/sysconfig/sapconf
+    else
+        log 'Failed to read /etc/sysconfig/sapconf'
+    fi
+    case "$IGNORE_RELOAD" in
+    yes|YES|true|0)
+        return 0 ;;
+    *)
+        return 1 ;;
+    esac)
+    return $?
+}
