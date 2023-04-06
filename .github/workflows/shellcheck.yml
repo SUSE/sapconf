@@ -5,6 +5,8 @@ on:
   # Triggers the workflow on pull request events but only for the master and sle-12 branch
   pull_request:
     branches: [ master, sle-12 ]
+  push:
+    branches: [ master, sle-12 ]
 
 jobs:
   # This workflow contains a single job called "shellcheck"

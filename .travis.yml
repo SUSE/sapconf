@@ -1,7 +1,0 @@
-language: bash
-sudo: false
-script:
-  - find . -type f -exec awk ' /^#!.*bash/{print FILENAME} {nextfile}' {} + | xargs shellcheck -s bash
-  #- ./ci/build.sh
-notifications:
-email: true
