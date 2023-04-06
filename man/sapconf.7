@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2015-2022 SUSE LLC
+.\" * Copyright (c) 2015-2023 SUSE LLC
 .\" * Authors: Howard Guo
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 7 "January 2022" "util-linux" "System Administration"
+.TH sapconf 7 "April 2023" "util-linux" "System Administration"
 .SH NAME
 sapconf \- Kernel and system configuration for SAP products
 
@@ -106,6 +106,24 @@ All settings are done according to SAP note number 900929, 941735, 1557506, 1771
 See the comments in the central sapconf configuration file \fI/etc/sysconfig/sapconf\fR or \fBsapconf(5)\fP for details.
 
 ATTENTION: Only chosen parts of the SAP Notes are implemented.
+
+.SH "PACKAGE INSTALLATION"
+If parameter values \fBchanged\fR in the central configuration file \fI/etc/sysconfig/sapconf\fP the package update of sapconf will detect and reload these changed values during the postrans section of the package update. This means for a short time the system is \fBNOT\fR fully tuned for SAP workloads.
+.br
+ATTENTION: To be on the safe side we recommend to run a sapconf package update with stopped SAP workloads, especially the HANA DB, to prevent crashes and data loss.
+
+To prevent sapconf from changing the systems tuning during a normal package update a parameter is available in the central configuration file \fI/etc/sysconfig/sapconf\fP.
+.TP 4
+.BI IGNORE_RELOAD="no"
+IGNORE_RELOAD is used to control the '\fBsystemctl reload sapconf.service\fR' behavior. The default is '\fBno\fR', which means that the 'reload' is working as expected. Stopping and starting the tuning to apply changed parameter settings from the configuration \fI/etc/sysconfig/sapconf\fP.
+.br
+If set to '\fByes\fR' a '\fBsystemctl reload sapconf\fR' will do \fBnothing\fR.
+
+During the package update this setting prevents the 'reload' of the sapconf related tuning parameter in the posttrans section of the update. Additional it influences the behavior of the restart running during the deinstallation section of the former package version.
+
+ATTENTION: If parameter settings in \fI/etc/sysconfig/sapconf\fP are changed during the package update, these settings are \fBnot\fR active after the package update. To activate please use '\fBsystemctl stop sapconf\fR' followed by '\fBsystemctl start sapconf\fR'.
+
+ATTENTION: If updateing from sapconf 4 to sapconf 5 the move from tuned to systemd is needed. In this case a stop of the tuning is needed during the pre install section and a start of the tuning in the postrans section of the package update is mandatory and will not be prevented by \fBIGNORE_RELOAD\fR.
 
 .SH "PACKAGE REQUIREMENTS"
 The following package requirements exist for the sapconf package:

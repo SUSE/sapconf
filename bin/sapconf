@@ -117,14 +117,22 @@ stop() {
 }
 
 # main
+parent_command=$(tr -d '\0' </proc/$PPID/cmdline)
+log "--- /usr/sbin/sapconf called with '$1'"
+log "--- (from '$parent_command')"
+log "--- ('$(systemctl is-active sapconf.service)', '$(systemctl --no-legend list-jobs sapconf.service)')"
+
 if [ -f /run/sapconf_during_pkg_inst ]; then
     # workaround to prevent service reload during preun/postun from a previous
     # sapconf (with tuned support) package, which gets triggered during package
     # update of sapconf
-    exit 0
+    log "we are called during a package update (from '$parent_command')"
+    if chk_reload_lock; then
+        log "And 'IGNORE_RELOAD' is set in sapconf configuration file, so nothing to do"
+        exit 0
+    fi
 fi
 
-log "--- /usr/sbin/sapconf called with '$1'"
 (systemctl -q is-enabled tuned 2>/dev/null || systemctl -q is-active tuned) && log "ATTENTION: tuned service is enabled/active, so we may encounter conflicting tuning values"
 
 if [ "$1" != "status" ]; then
@@ -135,7 +143,6 @@ if [ "$1" != "status" ]; then
 fi
 
 case "$1" in
-  #start|restart|try-restart)
   start)
     # To remain compatible with the original implementation of sapconf,
     # if no sapconf related tuning is active, netwever tuning
@@ -145,7 +152,14 @@ case "$1" in
 
   reload|restart|try-restart)
     if [[ $profile == sapconf-* ]]; then
-      stop; profile=""; start
+      log "--- "
+      log "--- reloading sapconf ...."
+      if chk_reload_lock; then
+        log "'IGNORE_RELOAD' is set in sapconf configuration file, so no permission to $1"
+        exit 0
+      else
+        stop; profile=""; start
+      fi
     else
       log "no active sapconf tuning - profile=$profile -, so nothing to $1"
     fi

@@ -383,3 +383,10 @@ MIN_PERF_PCT=
 # SAP Note 1984787
 #
 IO_SCHEDULER="noop none"
+
+# IGNORE_RELOAD
+# bsc#1209408
+# IGNORE_RELOAD is used to control the 'systemctl reload sapconf.service'
+# behaviour.
+# Default is 'no'. If set to 'yes' a 'systemctl reload' will do nothing.
+IGNORE_RELOAD=no
