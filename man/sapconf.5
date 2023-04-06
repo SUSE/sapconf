@@ -1,6 +1,6 @@
 .\"/* 
 .\" * All rights reserved
-.\" * Copyright (c) 2017-2022 SUSE LLC
+.\" * Copyright (c) 2017-2023 SUSE LLC
 .\" * Authors: Angela Briel
 .\" *
 .\" * This program is free software; you can redistribute it and/or
@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 5 "January 2022" "sapconf configuration file"
+.TH sapconf 5 "April 2023" "sapconf configuration file"
 .SH NAME
 sapconf \- central configuration file of sapconf
 
@@ -329,6 +329,14 @@ Set in the common part (tune_preparation) of the scripting
 .br
 SAP Note 2578899
 .RE
+.PP
+.TP 4
+.BI IGNORE_RELOAD="no"
+IGNORE_RELOAD does \fBnot\fR set a parameter to tune the system and has no related SAP Note.
+.br
+Instead IGNORE_RELOAD is used to control the '\fBsystemctl reload sapconf.service\fR' behavior. The default is '\fBno\fR', which means that the 'reload' is working as expected. Stopping and starting the tuning to apply changed parameter settings from the configuration \fI/etc/sysconfig/sapconf\fP.
+.br
+If set to '\fByes\fR' a '\fBsystemctl reload sapconf\fR' will do \fBnothing\fR.
 .PP
 .SH "FILES"
 .PP

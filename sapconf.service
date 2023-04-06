@@ -11,7 +11,7 @@ Requires=uuidd.socket
 Type=oneshot
 RemainAfterExit=true
 ExecStart=/usr/lib/sapconf/sapconf start
-ExecReload=/bin/sh -c '/usr/lib/sapconf/sapconf stop; /usr/lib/sapconf/sapconf start'
+ExecReload=/usr/lib/sapconf/sapconf reload
 ExecStop=/usr/lib/sapconf/sapconf stop
 
 [Install]
