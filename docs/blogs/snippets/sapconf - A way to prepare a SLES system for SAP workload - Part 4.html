@@ -1,0 +1,83 @@
+{% extends "base.html.template" %}
+
+{% block content %}
+<p id="author">June 8, 2018 | By: Sören Schmidt</p>
+This is the forth article about sapconf and it will cover the deinstallation
+<blockquote><strong>NOTE:</strong> For further documentation check SAP note 1275776 and the man pages shipped with sapconf.
+<br /><br /> 
+<strong>sapconf 4 → sapconf 5</strong>
+<br /><br /> 
+Well nothing much to add here, besides that tuned is not covered anymore.</blockquote>
+<h2>Deinstallation</h2>
+Really? You want to get rid of it? Well... If you really want:
+<pre>sles12-sp3:~ # rpm -e sapconf
+Removed symlink /etc/systemd/system/multi-user.target.wants/sapconf.service.
+</pre>
+Easy, wasn't it?
+<br /><br /> 
+But what is about the other packages that have been installed together with sapconf?
+Well, they're still there. <tt>tuned</tt>, <tt>sysstat</tt> and <tt>uuidd</tt> will not be removed.
+<pre>sles12-sp3:~ # rpm -q tuned sysstat uuidd
+tuned-2.4.1-6.1.noarch
+sysstat-10.2.1-9.2.x86_64
+uuidd-2.29.2-3.5.4.x86_64
+</pre>
+If you remember, only <tt>uuidd.socket</tt> should still be active and enabled:
+<pre>sles12-sp3:~ # systemctl status uuidd.socket
+● uuidd.socket - UUID daemon activation socket
+   Loaded: loaded (/usr/lib/systemd/system/uuidd.socket; enabled; vendor preset: enabled)
+   Active: active (listening) since Fr 2018-05-11 15:02:42 CEST; 4min 19s ago
+</pre>
+Tuned is not:
+<pre>sles12-sp3:~ # systemctl status tuned sysstat
+● tuned.service - Dynamic System Tuning Daemon
+   Loaded: loaded (/usr/lib/systemd/system/tuned.service; disabled; vendor preset: disabled)
+   Active: inactive (dead)
+</pre>
+And sysstat is still active, but keeps disabled:
+<pre>● sysstat.service - Write information about system start to sysstat log
+   Loaded: loaded (/usr/lib/systemd/system/sysstat.service; disabled; vendor preset: disabled)
+   Active: active (exited) since Fr 2018-05-11 15:02:42 CEST; 5min ago
+</pre>
+So, if you want to use systat further, don't forget to enable it!
+<br /><br /> 
+Is there something else left, what is not that obvious?
+Let me interrogate the man page:
+<pre>sles12-sp3:~ # man 7 sapconf
+...
+     Note: If the package sapconf is removed from the system, the following settings will still remain:
+
+       UserTasksMax setting in /etc/systemd/logind.conf.d/sap.conf
+           Please remove the file manually, if it is not needed any longer.
+           Note: A reboot is needed after the removal of the file to get the change take effect.
+
+       Maximum number of open file descriptors in /etc/security/limits.conf
+           Please remove the entries manually, if they are not needed any longer.
+
+       A running sysstat service.
+           Please stop the sysstat service manually, if it is not needed any longer.
+
+       /etc/sysconfig/sapconf
+           The central configuration file of sapconf is not removed during package removal.
+
+       /etc/tuned/sap-*
+           Private copies of tuned profiles in /etc/tuned are not removed during package removal.
+
+       /var/log/sapconf.log
+           The log file of sapconf will not be removed during package removal.
+</pre>
+&nbsp;
+<blockquote><strong>IMPORTANT:</strong> It's always good to read the documentation! ;-)</blockquote>
+This again was a short article and you almost made it thru the series.
+The fifth and final one will cover the leftovers.
+
+<hr />
+
+previous article: <a href="sapconf - A way to prepare a SLES system for SAP workload - Part 3.html">sapconf – A way to prepare a SLES system for SAP workload – Part 3</a>
+<br /><br /> 
+next article: <a href="sapconf - A way to prepare a SLES system for SAP workload - Part 5.html">sapconf – A way to prepare a SLES system for SAP workload – Part 5</a>
+
+<hr />
+
+&nbsp;
+{% endblock content %}

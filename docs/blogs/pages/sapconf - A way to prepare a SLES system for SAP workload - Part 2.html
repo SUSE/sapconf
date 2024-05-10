@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>sapconf - A way to prepare a SLES system for SAP workload - Part 2</title>
+        <style>
+            body { 
+    font-family: poppins,Verdana,sans-serif; 
+    background-color: white; 
+    width: 60%;
+    margin-left: 10%;
+}
+ul { padding-left: 1em; }
+h1 { 
+    padding-bottom: 0; 
+    margin-bottom: 0; 
+}
+a {font-weight: bold;}
+#author { 
+    font-style: italic; 
+    padding-top: 0; 
+    margin-top: 0; 
+    padding-bottom: 2em;
+    margin-bottom: 2em; 
+    border-bottom: thin solid gray; 
+}
+pre {
+    word-break: break-all;
+    color: #333333;
+    background-color: #f5f5f5;
+    border: 1px solid #cccccc;
+}
+code {
+    padding: 2px 4px;
+    font-size: 90%;
+    color: #c7254e;
+    background-color: #f9f2f4;
+    border-radius: 4px;
+  }
+  blockquote {
+    border-left: #cccccc solid 0.2em;
+    padding-left: 2em;
+    margin-left: 0;
+    font-size: 85%;
+  }
+  table {
+    font-size: 90%;
+    margin: 1em 0;
+    width: 100%;
+    background-color: transparent;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+  table tbody tr:nth-child(2n) {
+    background-color: #efefef;
+  }
+  table td {
+    border: 1px solid #d5d5d5;
+    padding: .2em;
+  }
+  table th {
+    border: 1px solid #d5d5d5;
+    padding: .2em;
+  }
+
+        </style>
+    </head>
+    <body>
+        <h1>sapconf - A way to prepare a SLES system for SAP workload - Part 2</h1>
+        <p id="author">June 8, 2018 | By: Sören Schmidt</p>
+        This is the second article about sapconf and it will cover the configuration.
+        <blockquote><strong>NOTE:</strong> For further documentation check SAP note 1275776 and the man pages shipped with sapconf.</blockquote>
+        <h2>Configuration</h2>
+        Before I show you some details, I have to talk about the make-up of sapconf.
+        <br /><br />  
+        In the past, sapconf was a simple shell script. With SLES 12 SP1 tuned came along and both became a merry couple, so nowadays one part of the configuration is done by tuned itself and another part is done by a shell script executed by tuned.
+        <br /><br />  
+        Tuned is a central component of sapconf.
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        	<br /><br />  
+        With sapconf 5 this has changed! We have removed tuned completely!</blockquote>
+        Sounds complicated? Maybe a little picture helps:
+        <br /><br />  
+        <img src="media/sapconftuned-1.png" alt="sapconf 4 and tuned" width="1297" height="473" /> sapconf 4 and tuned
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        	<br /><br />  
+        Here a picture for sapconf 5:
+        <br /><br />  
+        <img src="media/sapconf5tuned-1.png" alt="sapconf 5 and tuned" width="783" height="303" /> sapconf 5 and tuned</blockquote>
+        What you have to take with you, is that the configuration is split into two parts:
+        <ul>
+         	<li>A configuration file for tuned and</li>
+         	<li>a configuration file for the (sapconf) script (which is started by tuned).</li>
+        </ul>
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        	<br /><br />  
+        The entire configuration is now done in the sapconf 5 configuration files.</blockquote>
+        Who has worked with tuned already, knows that the basic element of tuned is a so called profile. To list all available profiles, run <tt>tuned-adm list</tt>:
+        <pre>sles12-sp3:~ # tuned-adm list
+        Available profiles:
+        - balanced
+        - desktop
+        - latency-performance
+        - network-latency
+        - network-throughput
+        - powersave
+        - sap-ase
+        - sap-bobj
+        - sap-hana
+        - sap-netweaver
+        - throughput-performance
+        - virtual-guest
+        - virtual-host
+        Current active profile: sap-netweaver</pre>
+        The profiles 'sap-ase', 'sap-bobj', 'sap-hana' and 'sap-netweaver' are shipped with sapconf, the others with tuned. There might be even more profiles coming from different packages (like saptune).
+        The sapconf installation also has set 'sap-netweaver', because no other profile was configured.
+        <blockquote><strong>NOTE:</strong> As mentioned in the previous article, sapconf will set the tuned profile on installation only if it is empty.</blockquote>
+        The re-work of sapconf included a unification process of these profiles. Sapconf shall become a simple all-purpose tool again. Who wants more intervention should have a look at saptune.
+        <br /><br />  
+        As a result in SLES 15 only one profile will be shipped to rule them all:'sapconf'.
+        Why not doing the same in SLES 12, you ask? Well, because bigger changes are only possible with a new SLES release to prevent a regression. The profiles have to stay, but we can make them equal. Hence in SLES 12, the profiles 'sap-hana' and 'sap-netweaver' are identical and you can choose either of it.
+        The profiles 'sap-ase' and 'sap-bobj' still work, but have been left out in the rework process for now, since they have been used rarely. Some parameters are even still hard-coded in the script and cannot be changed.
+        With SP4 they might become identical to 'sap-netweaver' too, but this has not been decided yet.
+        Nevertheless you should move away from 'sap-ase' and 'sap-bobj'.
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        	<br /><br />  
+        You will not find any tuned profiles for sapconf 5.
+        Profiles still exist in SLES 12, but these are sapconf profiles not tuned profiles and handled by sapconf 5 internally. In SLES 15 profiles does not exist anymore!</blockquote>
+        In case you want to change the profile, just run <tt>tuned-adm profile </tt>.
+        <blockquote><strong>WARNING:</strong> The profiles 'sap-ase' and 'sap-bobj' should not be used anymore!
+        Instead choose 'sap-hana' or 'sap-netweaver' which are identical.
+        In SLE 15 only one profile 'sapconf' will be shipped.</blockquote>
+        After this little detour to tuned and the background of sapconf, back to our configuration.
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        	<br /><br />  
+        If you want to change the profile in sapconf 5 (only SLES 12), please run:
+        <pre>sapconf stop &amp;&amp; sapconf &lt;new_profile&gt;</pre>
+        The profiles are named: netweaver, hana, bobj and ase.
+        The statement above about the profiles bobj and ase still applies. They're not maintained anymore and support for them is gone in SLES 15.</blockquote>
+        During installation we have got some information about configuration files, which I have skipped. Now it is time to address it.
+        <pre>... 
+        Updating /etc/sysconfig/sapnote-1680803... 
+        Updating /etc/sysconfig/sapconf... 
+        ...</pre>
+        The file <tt>/etc/sysconfig/sapnote-1680803</tt> belongs to the ASE profile (check <tt>man /etc/sysconfig/sapnote-1680803</tt>), which I will ignore.
+        <br /><br />  
+        One of both main configuration files is <tt>/etc/sysconfig/sapconf</tt>.
+        Since sapconf uses tuned, I have to look at the tuned configuration as well. But first things first.
+        <br /><br />  
+        Let me grep thru <tt>/etc/sysconfig/sapconf</tt> to see what parameters we have and what the default values are:
+        <pre>sles12-sp3:~ # grep '^#*[A-Z]' /etc/sysconfig/sapconf
+        VSZ_TMPFS_PERCENT=75
+        SHMALL=1152921504606846720
+        SHMMAX=18446744073709551615
+        SEMMSL=32000
+        SEMMNS=1024000000
+        SEMOPM=500
+        SEMMNI=32000
+        LIMIT_1="@sapsys soft nofile 65536"
+        LIMIT_2="@sapsys hard nofile 65536"
+        LIMIT_3="@sdba soft nofile 65536"
+        LIMIT_4="@sdba hard nofile 65536"
+        LIMIT_5="@dba soft nofile 65536"
+        LIMIT_6="@dba hard nofile 65536"
+        MAX_MAP_COUNT=2147483647
+        SHMMNI=32768
+        DIRTY_BYTES=629145600
+        DIRTY_BG_BYTES=314572800
+        TCP_SLOW_START=0
+        KSM=0
+        NUMA_BALANCING=0
+        THP=never
+        ENABLE_PAGECACHE_LIMIT="no"
+        #PAGECACHE_LIMIT_MB=""
+        #PAGECACHE_LIMIT_IGNORE_DIRTY=""
+        #SAPCONF_END=""</pre>
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        	<br /><br />  
+        With the removal of tuned in sapconf 5 you will see some additional variables:
+        <pre>PERF_BIAS=
+        GOVERNOR=
+        FORCE_LATENCY=70
+        MIN_PERF_PCT=
+        IO_SCHEDULER="noop none"</pre>
+        <strong>NOTE:</strong> To learn more about each variable, browse thru <tt>/etc/sysconfig/sapconf</tt>. Each variable is preluded by a comment section that explains the background and the origin (SAP note).</blockquote>
+        Some variables are commented out. The reason for this is, that there are no sane default values. Those variables have to be set only, if it makes sense.
+        <blockquote><strong>WARNING:</strong> Do not comment out a variable unless checking the effect with the sapconf log. Future versions will support this and leave the system setting alone. The current version does not do this in every case.</blockquote>
+        To demonstrate how to change a value, I will change <tt>TCP_SLOW_START</tt> from 0 to 1.
+        <br /><br />  
+        First I will check the current value to verify that it is really 0 as configured. The comment section tells me where to look:
+        <pre>sles12-sp3:~ # less /etc/sysconfig/sapconf 
+        ... 
+        # net.ipv4.tcp_slow_start_after_idle 
+        # If enabled (=1), provide RFC 2861 behavior and time out the congestion 
+        # window after an idle period. An idle period is defined as the current ... TCP_SLOW_START=0 
+        ... 
+        sles12-sp3:~ # sysctl net.ipv4.tcp_slow_start_after_idle 
+        net.ipv4.tcp_slow_start_after_idle = 0</pre>
+        Now I use my favorite editor and change <tt>TCP_SLOW_START=0</tt> to <tt>TCP_SLOW_START=1</tt> and restart sapconf:
+        <pre>sles12-sp3:~ # vi /etc/sysconfig/sapconf 
+        ... 
+        sles12-sp3:~ # systemctl restart sapconf.service 
+        sles12-sp3:~ # sysctl net.ipv4.tcp_slow_start_after_idle 
+        net.ipv4.tcp_slow_start_after_idle = 1</pre>
+        <blockquote><strong>NOTE:</strong> Earlier versions of sapconf did nothing on a restart. The new version behaves as expected and reloads the configuration!</blockquote>
+        The parameter has been set to 1 as configured.
+        <br /><br />  
+        Setting <tt>net.ipv4.tcp_slow_start_after_idle</tt> is also noted in sapconfs log file <tt>/var/log/sapconf.log</tt>:
+        <pre>sles12-sp3:~ # tail /var/log/sapconf.log 
+        ... 
+        2018-05-14 17:17:28+02:00 Leaving net.ipv4.tcp_slow_start_after_idle unchanged at 1 
+        ...</pre>
+        Wait a minute... Leaving it unchanged at 1? What's that suppose to mean?
+        <pre>sles12-sp3:~ # grep net.ipv4.tcp_slow_start_after_idle /var/log/sapconf.log
+        2018-05-14 16:11:47+02:00   Change net.ipv4.tcp_slow_start_after_idle from 1 to 0
+        2018-05-14 17:17:28+02:00   Restoring net.ipv4.tcp_slow_start_after_idle=1
+        2018-05-14 17:17:28+02:00   Leaving net.ipv4.tcp_slow_start_after_idle unchanged at 1</pre>
+        To understand the log messages you have to know how sapconf works.
+        On start it saves the current values of all parameters. When stopped all values will be reverted back.
+        This is behavior adopted from tuned. On profile entry tuned will save the current state and revert it when a profile is left.
+        If you have read the previous article carefully, you might remember that a sapconf restart does nothing else than stopping and starting tuned. This means leaving and entering a (sapconf) profile, which in turn calls the sapconf script.sh with stop and start as parameters (see the picture above).
+        <br /><br />  
+        With this in mind the lines make sense.
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        	<br /><br />  
+        Even with tuned removed, sapconf 5 still behaves the same. It saves the current values on start and restores them on stop.</blockquote>
+        I did the change of the configuration at 17:16. At this time the value of <tt>net.ipv4.tcp_slow_start_after_idle</tt> was 0.
+        Than I restarted sapconf (17:17), which means a stop followed by a start of tuned and therefore the sapconf script.
+        At first sapconf restored the value back to 1, because the value was 1 when sapconf has been started (it is the default on SLES 12).
+        Than sapconf applied the new configuration. Because the value was already 1, it had nothing to do.
+        <blockquote><strong>NOTE:</strong> To verify what sapconf does, check the log file <tt>/var/log/sapconf.log</tt>.
+        (But do not forget about the tuned log <tt>/var/log/tuned/tuned.log</tt>.)
+        <br /><br />  
+        <strong>sapconf 4 → sapconf 5</strong>
+        <br /><br />  
+        With sapconf 5 only /var/log/sapconf.log is used.
+        Of cause you will find entries in the system log when starting and stopping the sapconf service.</blockquote>
+        As said before, there is a second configuration due to the use of tuned.
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        	<br /><br />  
+        If you are using sapconf 5 - and you should - you can skip the rest of the article. It is about the tuned part which does not apply anymore.</blockquote>
+        All profiles have their configuration in <tt>/usr/lib/tuned/</tt>. At least a <tt>tuned.conf</tt> can be found there.
+        The directory <tt>/usr/lib/tuned/sap-netweaver</tt> contains a configuration file <tt>tuned.conf</tt> (Yes, that's it!) and a script <tt>script.sh</tt>.
+        <pre>sles12-sp3:~ # ls /usr/lib/tuned/sap-netweaver/
+        script.sh  tuned.conf</pre>
+        The only file you should care about is <tt>tuned.conf</tt>. This is the second part of the sapconf configuration.
+        The script <tt>script.sh</tt> contains the logic, to save and restore the values and apply the configuration in <tt>/etc/sysconfig/sapconf</tt>. It should not be touched.
+        <br /><br />  
+        Here the <tt>tuned.conf</tt>:
+        <pre>sles12-sp3:~ # cat /usr/lib/tuned/sap-netweaver/tuned.conf
+        #
+        # basic tuned configuration for SAP NetWeaver, SAP HANA and HANA based products.
+        # Additional parameters are tuned by script.sh
+        # For a brief explanation of the parameters, please have a look at the end of
+        # the central sapconf configuration file /etc/sysconfig/sapconf
+        #
+        [main]
+        summary=Optimize for SAP NetWeaver, SAP HANA and HANA based products
+
+        [cpu]
+         #governor = performance
+         #energy_perf_bias = performance
+         #min_perf_pct = 100
+         force_latency = 70
+
+        [disk]
+         elevator = noop
+
+        [script]
+         script = script.sh</pre>
+        The configuration file consists of several sections and looks very like a Windows ini file.
+        I'll not go into detail about the meaning of each parameter, since you can read about it in the man page and the lower part of <tt>/etc/sysconfig/sapconf</tt>.
+        Important here is, that some parameters are commented out again. Typically these are performance and energy saving settings. They are always causing debates. Some always want and need the maximum performance whilst other are more serious about low energy consumption. A SAP HANA will have different requirements than other SAP software.
+        The shipped default is more oriented towards energy saving. If this is not what you need, just remove the comment signs.
+        <br /><br />  
+        As an example how to make changes here, I will increase force_latency to 100.
+        Again I check the current setting to verify later that it went well.
+        <pre>sles12-sp3:~ # hexdump -e '"%i\n"' /dev/cpu_dma_latency
+        70</pre>
+        First I copy the <tt>tuned.conf</tt> in a profile directory of the same name (which I have to create first) in <tt>/etc/tuned/</tt>:
+        <pre>sles12-sp3:~ # mkdir /etc/tuned/sap-netweaver
+        sles12-sp3:~ # cp /usr/lib/tuned/sap-netweaver/tuned.conf /etc/tuned/sap-netweaver/</pre>
+        <blockquote><strong>WARNING:</strong> Never edit any file beneath <tt>/usr/lib/tuned/</tt> directly!
+        Those files will be overwritten on update. Always create a copy in <tt>/etc/tuned//</tt> (<tt>man 7 tuned-profiles</tt>).</blockquote>
+        Afterwards I change the <tt>force_latency</tt> value and - this is very important - correct the script path!
+        As a relative path tuned would search for it in <tt>/etc/tuned/sap-netweaver/</tt> and not find it. Since this script applies all the configuration in <tt>/etc/sysconfig/sapconf</tt> a major part of our configuration would be ignored, if I do nothing here.
+        <blockquote><strong>WARNING:</strong> Do not copy <tt>script.sh</tt> into the profile directory in <tt>/etc/tuned<tt> as well! This seems easier, but than it will never updated by a package update and you will miss bug fixes and enhancements.</tt></tt></blockquote>
+        <pre>sles12-sp3:~ # vi /etc/tuned/sap-netweaver/tuned.conf
+        ....
+        force_latency = 100
+        ....
+        [script]
+        script = /usr/lib/tuned/sap-netweaver/script.sh</pre>
+        After a restart of sapconf the new value has been applied by tuned:
+        <pre>sles12-sp3:~ # systemctl restart sapconf.service
+        sles12-sp3:~ # hexdump -e '"%i\n"' /dev/cpu_dma_latency
+        100</pre>
+        The log file of sapconf will not show any hint about this change, since it was made by tuned. This can be confusing at first, but remember that sapconf consists of two parts. The tuned configuration (<tt>tuned.conf</tt>) which is handled by tuned entirely and <tt>/etc/sysconfig/sapconf</tt> handled by the script referenced in the +[script]+ section, which logs to <tt>/var/log/sapconf</tt>.
+        <br /><br />  
+        Said that, entries about my last change have to be in the tuned log:
+        <pre>sles12-sp3:~ # tail /var/log/tuned/tuned.log
+        ...
+        2018-05-15 09:57:10,343 INFO     tuned.profiles.loader: loading profile: sap-netweaver
+        ...
+        2018-05-15 09:57:10,348 INFO     tuned.daemon.daemon: starting tuning
+        ...
+        2018-05-15 09:57:10,365 INFO     tuned.plugins.plugin_cpu: setting new cpu latency 100
+        2018-05-15 09:57:10,366 INFO     tuned.plugins.plugin_script: calling script '/usr/lib/tuned/sap-netweaver/script.sh' with argument 'start'</pre>
+        Here we see that:
+        <ol>
+         	<li>tuned loaded the <tt>sap-netweaver</tt> profile,</li>
+         	<li><tt>force_latency</tt> was set to 100 and</li>
+         	<li>the sapconf script was called.</li>
+        </ol>
+        <blockquote><strong>NOTE:</strong> The name <tt>tuned</tt> could lead to the impression that this is daemon verifying and correcting all parameters constantly. There is a load based dynamic tuning, but it does not mean that the profile is re-applied regularly. This happens only when a profile is entered!</blockquote>
+        Let me summarize the most important facts about configuration:
+        <ul>
+         	<li>The configuration is split into two parts:
+        <ul>
+         	<li><tt>/etc/sysconfig/sapconf</tt></li>
+         	<li><tt>/usr/lib/tuned//tuned.conf</tt></li>
+        </ul>
+        </li>
+         	<li>Never edit <tt>/usr/lib/tuned//tuned.conf<tt>, always make a copy in <tt>/etc/tuned/</tt> and don't forget to alter the path to <tt>script.sh</tt>.</tt></tt></li>
+         	<li>After making changes, restart sapconf to apply them.</li>
+         	<li>Check both logfiles <tt>/var/log/tuned/tuned.log</tt> and <tt>/var/log/sapconf.log</tt></li>
+        </ul>
+        That's it for today.
+        The next article will cover the update from a previous sapconf.
+
+        <hr />
+
+        previous article: <a href="sapconf - A way to prepare a SLES system for SAP workload - Part 1.html">sapconf – A way to prepare a SLES system for SAP workload – Part 1</a>
+        <br /><br />  
+        next article: <a href="sapconf - A way to prepare a SLES system for SAP workload - Part 3.html">sapconf – A way to prepare a SLES system for SAP workload – Part 3</a>
+
+        <hr />
+
+        &nbsp;
+<body>
+</html>

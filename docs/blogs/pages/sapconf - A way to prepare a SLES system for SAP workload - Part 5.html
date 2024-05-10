@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>sapconf - A way to prepare a SLES system for SAP workload - Part 5</title>
+        <style>
+            body { 
+    font-family: poppins,Verdana,sans-serif; 
+    background-color: white; 
+    width: 60%;
+    margin-left: 10%;
+}
+ul { padding-left: 1em; }
+h1 { 
+    padding-bottom: 0; 
+    margin-bottom: 0; 
+}
+a {font-weight: bold;}
+#author { 
+    font-style: italic; 
+    padding-top: 0; 
+    margin-top: 0; 
+    padding-bottom: 2em;
+    margin-bottom: 2em; 
+    border-bottom: thin solid gray; 
+}
+pre {
+    word-break: break-all;
+    color: #333333;
+    background-color: #f5f5f5;
+    border: 1px solid #cccccc;
+}
+code {
+    padding: 2px 4px;
+    font-size: 90%;
+    color: #c7254e;
+    background-color: #f9f2f4;
+    border-radius: 4px;
+  }
+  blockquote {
+    border-left: #cccccc solid 0.2em;
+    padding-left: 2em;
+    margin-left: 0;
+    font-size: 85%;
+  }
+  table {
+    font-size: 90%;
+    margin: 1em 0;
+    width: 100%;
+    background-color: transparent;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+  table tbody tr:nth-child(2n) {
+    background-color: #efefef;
+  }
+  table td {
+    border: 1px solid #d5d5d5;
+    padding: .2em;
+  }
+  table th {
+    border: 1px solid #d5d5d5;
+    padding: .2em;
+  }
+
+        </style>
+    </head>
+    <body>
+        <h1>sapconf - A way to prepare a SLES system for SAP workload - Part 5</h1>
+        <p id="author">June 8, 2018 | By: Sören Schmidt</p>
+        This is the fifth and last article about sapconf and it will tie up lose ends.
+        <blockquote><strong>NOTE:</strong> For further documentation check SAP note 1275776 and the man pages shipped with sapconf.
+        	<br /><br /> 
+        <strong>sapconf 4 → sapconf 5</strong>
+        <br /><br /> 
+        The following list is quite long, so If decided to make two sections. One for sapconf 4 and one for sapconf 5.</blockquote>
+        &nbsp;
+        <h2>Summary of important things (sapconf 4)</h2>
+        If you install the reworked sapconf version for the first time:
+        <ul>
+         	<li>After installation, sapconf is enabled and started immediately with a default configuration, if no other tuned profile was set.</li>
+         	<li>Leave the profile 'sap-netweaver' (or switch to 'sap-hana' if you really want) even if you run HANA, BOBJ or ASE.</li>
+         	<li>Verify both main configuration files <tt>/etc/sysconfig/sapconf</tt> and <tt>/usr/lib/tuned//tuned.conf</tt>.</li>
+         	<li>Verify that parameters handled by sapconf are not configured elsewhere (e.g. boot parameter, sysctl.conf, etc.).</li>
+        </ul>
+        &nbsp;
+        <br /><br /> 
+        If you update to the reworked sapconf version:
+        <ul>
+         	<li>After the update sapconf will immediately apply the shipped default configuration, if sapconf is running.</li>
+         	<li>Manually transfer any configuration from your old configuration (<tt>/etc/sysconfig/sapconf.rpmsave</tt>) to the new one (<tt>/etc/sysconfig/sapconf</tt>). Do not copy any files!.</li>
+         	<li>If you have a sapconf profile in <tt>/etc/tuned/</tt>, copy the new profile from <tt>/usr/lib/tuned/</tt> and alter it.</li>
+         	<li>Move away from the profiles 'sap-ase' and 'sap-bobj'..</li>
+         	<li>Verify both main configuration files <tt>/etc/sysconfig/sapconf</tt> and <tt>/usr/lib/tuned//tuned.conf</tt>, if they fit your needs.</li>
+         	<li>Verify that parameters handled by sapconf are not configured elsewhere (e.g. boot parameter, <tt>sysctl.conf, etc.).</tt></li>
+        </ul>
+        &nbsp;
+        <br /><br /> 
+        If you remove (the re-worked) sapconf:
+        <ul>
+         	<li>Enable <tt>sysstat.service</tt> if you want to use it further.</li>
+         	<li>Check if <tt>tuned.service</tt> is enabled! After removal the profile is empty and tuned will choose its default profile. The result might not be what you want.</li>
+         	<li>The <tt>uuidd</tt>, nofile user limits and <tt>DefaultTasksMax</tt> are not going away. No worries.</li>
+        </ul>
+        &nbsp;
+        <br /><br /> 
+        Always a good idea:
+        <ul>
+         	<li>Read the rpm output after an installation or update!</li>
+         	<li>Read the man pages carefully!</li>
+         	<li>Check the rpm changelog to find out, what has been changed!</li>
+         	<li>Check SAP note 1275776 for changes.</li>
+        </ul>
+        <h2>Summary of important things (sapconf 5)</h2>
+        If you install the sapconf 5 for the first time:
+        <ul>
+         	<li>After installation, sapconf is enabled and started immediately with a default configuration always.</li>
+         	<li>Leave the profile netweaver (or switch to hana if you really want) even if you run HANA, BOBJ or ASE.</li>
+         	<li>Verify the main configuration file /etc/sysconfig/sapconf.</li>
+         	<li>Verify that parameters handled by sapconf are not configured elsewhere (e.g. boot parameter, sysctl.conf, etc.).</li>
+        </ul>
+        If you update from sapconf 4 to sapconf 5:
+        <ul>
+         	<li>If you had a customized tuned profile <strong><em>with additional</em> </strong>parameters added, create your own tuned profile for them (<em><strong>and only them</strong></em>) and enable tuned.service.</li>
+         	<li>Manually transfer any configuration from your old configuration (/etc/sysconfig/sapconf.rpmsave) to the new one (/etc/sysconfig/sapconf). Do not copy any files!</li>
+         	<li>Check your workflows, scripts, etc. for tuned-related commands and replace them.</li>
+         	<li>Move away from the profiles sap-ase and sap-bobj.</li>
+         	<li>Verify the main configuration file /etc/sysconfig/sapconf if it fits your needs.</li>
+         	<li>Verify that parameters handled by sapconf are not configured elsewhere (e.g. boot parameter, sysctl.conf, etc.).</li>
+        </ul>
+        If you remove sapconf 5:
+        <ul>
+         	<li>Enable sysstat.service if you want to use it further.</li>
+         	<li>The uuidd, nofile user limits and DefaultTasksMax are not going away. No worries.</li>
+        </ul>
+        Always a good idea:
+        <ul>
+         	<li>Read the rpm output after an installation or update!</li>
+         	<li>Read the man pages carefully!</li>
+         	<li>Check the rpm changelog to find out, what has been changed!</li>
+         	<li>Check SAP note 1275776 for changes.</li>
+        </ul>
+        <h3>How to prevent autostart of sapconf after installation?</h3>
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        This still applies to sapconf 5.</blockquote>
+        I promised earlier, that I would show a way to prevent the automatic start of sapconf after installation.
+        Here it is.
+        <br /><br /> 
+        <strong>Before</strong> you install sapconf, you have to mask the not yet existing <tt>sapconf.service</tt>.
+        <br /><br /> 
+        I have brought my system back to state when sapconf wasn't installed.
+        <pre>...
+        (reset vm)
+        ...
+        sles12-sp3:~ # rpm -q sapconf sysstat tuned uuidd
+        package sapconf is not installed
+        package sysstat is not installed
+        package tuned is not installed
+        package uuidd is not installed
+        </pre>
+        Now I mask the sapconf service:
+        <pre>sles12-sp3:~ # systemctl mask sapconf.service
+        Created symlink from /etc/systemd/system/sapconf.service to /dev/null.
+        </pre>
+        And install sapconf:
+        <pre>sles12sp3-sapconftest:~ # zypper install sapconf
+        ...
+        Failed to execute operation: Unit file is masked
+        ...
+        Output of sapconf-4.1.12-40.47.1.noarch.rpm %posttrans script:
+            Failed to start sapconf.service: Unit sapconf.service is masked.
+        </pre>
+        The end of the output differs from that what we have seen before. The masked unit has been detected and sapconf was neither enabled nor started.
+        Let's verify this:
+        <pre>sles12-sp3:~ # systemctl status sapconf
+        ● sapconf.service
+           Loaded: masked (/dev/null; masked)
+           Active: inactive (dead)
+        </pre>
+        Has this an impact on our other services?
+        <pre>sles12-sp3:~ # systemctl status tuned.service sysstat.service uuidd.socket
+        ● tuned.service - Dynamic System Tuning Daemon
+           Loaded: loaded (/usr/lib/systemd/system/tuned.service; disabled; vendor preset: disabled)
+           Active: inactive (dead)
+        </pre>
+        Tuned is disabled and inactive. Since sapconf starts it, this was expected.
+        <pre>● sysstat.service - Write information about system start to sysstat log
+           Loaded: loaded (/usr/lib/systemd/system/sysstat.service; disabled; vendor preset: disabled)
+           Active: inactive (dead)
+        </pre>
+        The same with sysstat.
+        <pre>● uuidd.socket - UUID daemon activation socket
+           Loaded: loaded (/usr/lib/systemd/system/uuidd.socket; enabled; vendor preset: enabled)
+           Active: inactive (dead)
+           Listen: /run/uuidd/request (Stream)
+        </pre>
+        This looks not that good. The socket is enabled, but inactive! If we do nothing the <tt>uuidd.socket</tt> will be available after the next reboot earliest.
+        <br /><br /> 
+        But before you complain, let us remember why we masked the sapconf service in the first place. The goal was to prevent an autostart after installation to have a chance to alter the configuration to our needs!
+        <br /><br /> 
+        This worked! And now we configure sapconf....
+        <pre>...
+        </pre>
+        Done. What next?
+        We unmask, enable and start the sapconf service:
+        <pre>sles12-sp3:~ # systemctl unmask sapconf.service
+        Removed symlink /etc/systemd/system/sapconf.service.
+        sles12-sp3:~ # systemctl enable sapconf.service
+        Created symlink from /etc/systemd/system/multi-user.target.wants/sapconf.service to /usr/lib/systemd/system/sapconf.service.
+        sles12-sp3:~ # systemctl start sapconf.service
+        </pre>
+        If you check again the status of <tt>tuned</tt>, <tt>sysstat</tt> and <tt>uuidd</tt>, you will see that everything is fine now.
+        <h3>How to disable sysstat?</h3>
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        This still applies to sapconf 5.</blockquote>
+        You do not want sar data collected for some reason. Its your prerogative. But how to do it?
+        Deinstallation is not an option!
+        You would break the rpm dependencies and the package would be reinstalled at the next update. Yes, you could lock the package, but no need for that. Besides you might want to have to the sysstat tools installed for a manual analysis of your system.
+        <br /><br /> 
+        To prevent the start of <tt>sysstat.service</tt> by sapconf, just mask the service. If you know this in advance, you can do it before the installation of sapconf. If you want to do it later, you *must* stop the sysstat service first!
+        <pre>sles12-sp3:~ # systemctl stop sysstat.service
+        sles12-sp3:~ # systemctl mask sysstat.service
+        Created symlink from /etc/systemd/system/sysstat.service to /dev/null.
+        </pre>
+        Why that? The sysstat service creates a link for cron on start and removes it again at stop:
+        <pre>sles12-sp3:~ # cat /usr/lib/systemd/system/sysstat.service
+        ...
+        ExecStart=/bin/ln -fs /etc/sysstat/sysstat.cron /etc/cron.d/sysstat
+        ExecStop=/bin/rm -f /etc/cron.d/sysstat
+        ...
+        </pre>
+        If you mask the service <strong>after</strong> sysstat has been started, the link will never removed and the sar data are still collected regulary - exactly that, what you do not want!
+        <h3>Is sapconf deprecated?</h3>
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        You should not see any messages like this anymore.</blockquote>
+        If you browse thru the log files - and as a careful admin you do of cause - you might stumble across these lines:
+        <pre>sles12-sp3:~ # cat /var/log/messages
+        ...
+        2018-05-15T15:03:09.422940+02:00 sles12-sp3 sapconf[2183]: Warning: sapconf is deprecated. Please use system tuning daemon (tuned) instead.
+        ...
+        </pre>
+        Don't worry! This message was just missed during rework and is an obsolete statement. Sapconf will be there for you in SLES 12 and SLES 15.
+        With one of the next updates it will be fixed. So please update regularly as you always do. ;-)
+        <h3>What about sysctl?</h3>
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        This still applies to sapconf 5.</blockquote>
+        Lately I have been asked about how sapconf plays together with sysctl.
+
+        How does sysctl works?
+        Old stagers know from their experience with SLES 11, that you have to put your configuration into <tt>/etc/sysctl.conf</tt> and apply it with <tt>sysctl -p</tt> or let the boot script <tt>/etc/init.d/boot.sysctl</tt> do the job.
+        On SLES 12 the configuration should be put into <tt>/etc/sysctl.d/</tt> (you find a compatibility link for <tt>/etc/sysctl.conf</tt>: <tt>99-sysctl.conf -&gt; /etc/sysctl.conf/</tt> there).
+        The command <tt>sysctl</tt> works as usual, but the SysV init script has been replaced with the systemd-sysctl service (For more details, please read the man pages of <tt>systemd-sysctl.service</tt> and <tt>sysctl.d</tt>.).
+
+        The unit file of sapconf lists the dependencies:
+        <pre>sles12-sp3:~ # cat /usr/lib/systemd/system/sapconf.service
+        [Unit]
+        Description=sapconf
+        After=syslog.target systemd-sysctl.service network.target
+        ...
+        </pre>
+        <tt>systemd-sysctl.service</tt> comes first, <tt>sapconf.service</tt> later, so sapconf will win and overwrite the values of <tt>/etc/sysctl.d/*</tt>.
+        If an admin or a tool executes <tt>sysctl -p</tt> later, than the values are overwritten. Because tuned does not verify the profile regularly, the values will stay until tuned is ordered to change or re-apply a profile.
+        You see, that confusion is almost guaranteed if you configure the parameters sapconf takes care of for sysctl as well. Avoid it!
+        <br /><br /> 
+        That's it folks!
+        I hope I covered the most important aspects of sapconf. If you feel that something s missing, let me know. I will update the series - especially this post - from time to time, if I will be asked something again and again.
+        <br /><br /> 
+        <hr />
+
+        previous article: <a href="sapconf - A way to prepare a SLES system for SAP workload - Part 4.html">sapconf – A way to prepare a SLES system for SAP workload – Part 4</a>
+
+        <hr />
+<body>
+</html>

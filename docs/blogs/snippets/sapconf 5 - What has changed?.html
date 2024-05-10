@@ -1,0 +1,106 @@
+{% extends "base.html.template" %}
+
+{% block content %}
+<p id="author">August 3, 2020 | By: Sören Schmidt</p>
+<h2>It is out</h2>
+Last week sapconf 5 turned up in the SLES 15 repositories. SLES 12 will follow shortly.
+This new version does not rely on tuned anymore, which means some work steps you are used to, are different now.
+<h2>Why did we do that?</h2>
+<ul>
+ 	<li>Tuned was only used for CPU tuning and setting the IO scheduler. Everything else was done by the sapconf script itself just called by tuned.
+It was the next logical step to reduce complexity and remove it.</li>
+</ul>
+
+<ul>
+ 	<li>We had several requests regarding multiqueue schedulers which turned up
+increasingly on customer systems. (See my blog post <a href="https://suse.com/c/noop-now-named-none">Noop now named none</a> for details.)
+Supporting multiple schedulers is not possible with the version of tuned we ship, so we had to act and implement it in sapconf directly.</li>
+</ul>
+
+<ul>
+ 	<li>Sapconf now has a more straightforward configuration.
+All parameters are in sapconf configuration files and you don't be bothered with handling the tuned configuration as well.</li>
+</ul>
+I know that some of you will consider these changes annoying, but we hope that the benefits outweigh the trouble.
+<h2>Starting and Stopping</h2>
+If you use 'sapconf.service' already, nothing is going to change for you. It is still the preferred way to start or stop sapconf.
+
+Everybody else:
+
+<strong>Please use 'systemctl start|stop|status sapconf.service' from now on!</strong>
+<blockquote><strong>IMPORTANT</strong>
+
+It is possible to use tuned and sapconf in parallel! We decided to do so, because power users might need the additional features of tuned to aid sapconf in it's work.
+But be aware! If you have both sapconf.service and tuned.service enabled, the tools might fight each other!</blockquote>
+<h2>Setting the profile (SLES 12)</h2>
+As you know sapconf is going back to it's roots to do only what's really necessary.
+In SLES 15 the various profiles are gone, but we still have them in SLES 12 for compatibility reasons.
+
+The profiles for 'netweaver' and 'hana' became identical with the sapconf rework two years ago, so it really doesn't matter which of them you're going to use.
+The profiles 'ase' and 'bobj' still exist too, but as not maintained, you should avoid them.
+
+Setting the profile with 'tuned-adm' will not work anymore!
+
+<strong>To change the profile, run: 'sapconf stop &amp;&amp; sapconf &lt;profile&gt;'</strong>
+
+The actual profile can be looked up by: 'cat /var/lib/sapconf/act_profile'  (from v5.0.1 onward: '/run/sapconf_act_profile')
+<h2>Setting the profile (SLES 15)</h2>
+You cannot set the 'sapconf' profile with 'tuned-adm' anymore!
+
+<strong>Simply start or stop sapconf by it's systemd service as described above.</strong>
+<h2>Configuration</h2>
+The entire configuration is now in '/etc/sysconfig/sapconf'.
+<blockquote><strong>NOTICE</strong>
+
+If you're using the deprecated profiles 'ase' or 'bobj' also the configuration files '/etc/sysconfig/sapnote-1680803' and '/etc/sysconfig/sapnote-bobj' are relevant.</blockquote>
+Everything that was is the tuned configuration became now part of '/etc/sysconfig/sapconf'.
+
+Here a short table:
+<pre>  sapconf 4               sapconf 5 
+ (tuned.conf)      (/etc/sysconfig/sapconf)
+------------------ ------------------------
+[cpu]              PERF_BIAS=
+energy_perf_bias=
+
+[cpu]              GOVERNOR=
+governor=
+
+[cpu]              FORCE_LATENCY=
+force_latency=
+
+[cpu]              MIN_PERF_PCT=
+min_perf_pct= 
+
+[disk]             IO_SCHEDULER=
+elevator= 
+
+</pre>
+I will not explain the details here. Please read the comments in the configuration file and the man pages.
+If you have the need to change something, just edit the file 'etc/sysconfig/sapconf' and restart sapconf.
+<h2>How do I upgrade?</h2>
+Just run: 'zypper update sapconf'
+
+The new package should be listed and you can proceed like you do with any other package update.
+<h2>What happens during the package update?</h2>
+The tuned configuration gets migrated and removed afterwards by the update.
+If the tuned service was enabled the update will disable it.
+<br /><br />
+So don't be surprised that your '/etc/tuned/&lt;sapconf profile&gt;' is gone. You will find a copy in
+'/var/lib/sapconf/saved_configs/'. All your settings are transferred to '/etc/sysconfig/sapconf'.
+<br /><br />
+So, you don't have to do anything except if you have put <strong>additional</strong> parameters in the tuned.conf of the sapconf profile, which are not shipped by sapconf!
+If you need these, you have to setup your own tuned profile for it. It is no problem to run sapconf and tuned in parallel, but be careful not to have both handling the same system parameters!
+<blockquote><strong>IMPORTANT</strong>
+	<br /><br />
+Check all procedures you have in place which deploy sapconf configuration files or interact with sapconf!</blockquote>
+<h2>How can I check, that my sapconf is set up correctly?</h2>
+There is a check script which verifies your saptune or sapconf setup: <a href="https://github.com/scmschmidt/sapconf_saptune_check">sapconf_saptune_check</a>
+It supports both versions 4 and 5 and checks if everything is sound.
+<h2>Where can I find documentation?</h2>
+Besides the man pages of sapconf, also SAP Note <a href="https://launchpad.support.sap.com/#/notes/1275776">1275776 - Linux: Preparing SLES for SAP environments</a> 
+and our <a href="https://documentation.suse.com/">Product Documentation</a> for SLES for SAP Applications has been updated (only SLES 15 SP2 at the moment), 
+as well as the sapconf blog series: <a href="sapconf - A way to prepare a SLES system for SAP workload - Part 1.html">sapconf - A way to prepare a SLES system for SAP workload - Part 1</a>
+<br /><br />
+Enjoy!
+
+{% endblock content %}
