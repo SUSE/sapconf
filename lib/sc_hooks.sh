@@ -33,6 +33,18 @@ lc_add() {
     sed -i 's/^# Set to 65536/# Set to 1048576 (as recommended by revision 6 of the SAP Note)/' "$SN"
 }
 
+thp_reset() {
+    osvers=$(grep ^VERSION= /etc/os-release | awk -F \" '{ print $2 }')
+    case "$osvers" in
+    15-SP[1234])
+        sed -i 's/^THP=madvise/THP=never/g' "$SN"
+        sed -i "s/^# set to 'madvise'/# set to 'never'/g" "$SN"
+        sed -i "/^# 'madvise' will enter.*/,+1d" "$SN"
+        sed -i 's/^# Configure transparent hugepages/# Disable transparent hugepages/' "$SN"
+        ;;
+    esac
+}
+
 thp_change() {
     osvers=$(grep ^VERSION= /etc/os-release | awk -F \" '{ print $2 }')
     case "$osvers" in
@@ -59,5 +71,8 @@ del)
 nothing)
     lc_add
     thp_change
+    ;;
+reset)
+    thp_reset
     ;;
 esac
