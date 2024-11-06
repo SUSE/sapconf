@@ -34,12 +34,17 @@ lc_add() {
 }
 
 thp_change() {
-    sed -i 's/^THP=never/THP=madvise/g' "$SN"
-    sed -i "s/^# set to 'never'/# set to 'madvise'/g" "$SN"
-    sed -i '/^# Disable transparent hugepages/i\
+    osvers=$(grep ^VERSION= /etc/os-release | awk -F \" '{ print $2 }')
+    case "$osvers" in
+    15-SP[567])
+        sed -i 's/^THP=never/THP=madvise/g' "$SN"
+        sed -i "s/^# set to 'never'/# set to 'madvise'/g" "$SN"
+        sed -i '/^# Disable transparent hugepages/i\
 # '\''madvise'\'' will enter direct reclaim like '\''always'\'' but only for regions that\
 # are have used madvise(MADV_HUGEPAGE). This is the default behaviour.' "$SN"
-    sed -i 's/^# Disable transparent hugepages/# Configure transparent hugepages/' "$SN"
+        sed -i 's/^# Disable transparent hugepages/# Configure transparent hugepages/' "$SN"
+        ;;
+    esac
 }
 
 case "$hook_opt" in
