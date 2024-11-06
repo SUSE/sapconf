@@ -183,12 +183,14 @@ NUMA_BALANCING=0
 # /sys/kernel/mm/transparent_hugepage/enabled
 #
 # 'never' to disable, 'always' to enable
-# Disable transparent hugepages
-# set to 'never'
+# 'madvise' will enter direct reclaim like 'always' but only for regions that
+# are have used madvise(MADV_HUGEPAGE). This is the default behaviour.
+# Configure transparent hugepages
+# set to 'madvise'
 #
 # SAP Note 2131662, 2684254, 2031375
 #
-THP=never
+THP=madvise
 
 # Energy Performance Bias EPB (applies to Intel-based systems only)
 #

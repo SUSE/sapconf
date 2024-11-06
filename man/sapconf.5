@@ -14,7 +14,7 @@
 .\" * GNU General Public License for more details.
 .\" */
 .\" 
-.TH sapconf 5 "April 2023" "sapconf configuration file"
+.TH sapconf 5 "November 2024" "sapconf configuration file"
 .SH NAME
 sapconf \- central configuration file of sapconf
 
@@ -188,10 +188,13 @@ SAP Note 2684254
 .RE
 .PP
 .TP 4
-.BI THP=never
-Disable transparent hugepages.
+.BI THP=madvise
+Configure transparent hugepages.
 .br
-Set to 'never' to disable or to 'always' to enable.
+Set to 'never' to disable or to 'always' to enable or 'madvise'.
+.br
+\fBmadvise\fP will enter direct reclaim like 'always' but only for regions that
+are have used madvise(MADV_HUGEPAGE). This is the default behaviour.
 .PP
 .RS 4
 Set in \fB/sys/kernel/mm/transparent_hugepage/enabled\fP during the SAP tuning part of the scripting
