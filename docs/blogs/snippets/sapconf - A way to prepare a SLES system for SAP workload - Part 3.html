@@ -1,0 +1,296 @@
+{% extends "base.html.template" %}
+
+{% block content %}
+<p id="author">June 8, 2018 | By: Sören Schmidt</p>
+This is the third article about sapconf and it will cover the update from a previous (not reworked) version to a reworked one.
+<blockquote><strong>NOTE:</strong> For further documentation check SAP note 1275776 and the man pages shipped with sapconf.
+	<br /><br /> 
+<strong>sapconf 4 → sapconf 5</strong>
+<br /><br /> 
+This is the only comment about sapconf 5 I have added to this post.
+<br /><br /> 
+The original post describes the update to the reworked version we released over 2 years ago. I have to assume that everybody who uses sapconf runs the reworked version 4 by now. An update from version 3 to 5 should work, but we haven't tested it.
+<br /><br /> 
+Therefore let me go a bit deeper into the update from 4 to 5:
+<br /><br /> 
+An update on SLES 12:
+<pre># zypper update sapconf
+...
+Updating /etc/sysconfig/sapnote-1680803...
+Updating /etc/sysconfig/sapnote-bobj...
+Updating /etc/sysconfig/sapconf...
+Updating /etc/security/limits.conf...
+File '/etc/systemd/logind.conf.d/sap.conf' already exists, nothing to do.</pre>
+The first two messages are about updates for the 'ase' and 'bobj' profiles. Both files contain now everything that was handled by tuned which is not used anymore.
+The third line is about the main configuration file /etc/sysconfig/sapconf. Also everything that has been in the tuned configuration before has been moved to this file now.
+The next one is about removing the nofile block in /etc/security/limits.conf. With sapconf 5 a drop-in /etc/security/limits.d/sapconf-nofile.conf will be created on start and removed on stop. This is much cleaner.
+And finally the last one is about the infamous drop-in to set UserTasksMax to infinity.
+<br /><br /> 
+If you look at update on SLES 15, you will see much less:
+<pre>Updating /etc/sysconfig/sapconf ...
+Updating /etc/security/limits.conf...</pre>
+Profiles does not exist anymore, therefore only one configuration file /etc/sysconfig/sapconf exists.
+Also the limits entry became dynamic on SLES 15 as well.
+With the latest systemd packages the drop-in to set UserTasksMax is not necessary anymore. TasksMax and UserTasksMax are infinity already.
+<br /><br /> 
+If you have a customized tuned config for sapconf, additional messages will appear:
+<pre>...
+Updating /etc/sysconfig/sapconf line 'GOVERNOR=' with line 'GOVERNOR=performance' from /etc/tuned/sapconf/tuned.conf...
+Updating /etc/sysconfig/sapconf line 'PERF_BIAS=' with line 'PERF_BIAS=performance' from /etc/tuned/sapconf/tuned.conf...
+Updating /etc/sysconfig/sapconf line 'MIN_PERF_PCT=' with line 'MIN_PERF_PCT=100' from /etc/tuned/sapconf/tuned.conf...
+Updating /etc/sysconfig/sapconf line 'FORCE_LATENCY=70' with line 'FORCE_LATENCY=20' from /etc/tuned/sapconf/tuned.conf...
+Updating /etc/sysconfig/sapconf line 'IO_SCHEDULER="noop none"' with line 'IO_SCHEDULER=deadline' from /etc/tuned/sapconf/tuned.conf...
+...</pre>
+You can see, that all your changes are transferred from tuned to sapconf and are preserved!
+The tuned configuration is removed completely, but you can find a copy in /var/lib/sapconf/saved_configs/.
+<br /><br /> 
+Let me summarize the important facts here:
+<ul>
+ 	<li>Everything that was configured in tuned has now moved to sapconf configuration files.</li>
+ 	<li>If you had a customized sapconf tuned profile, the changes have been moved too!
+Any <em><strong>additional</strong></em> entries sapconf can't handle! Please create a custom tuned profile for them.</li>
+</ul>
+</blockquote>
+<h2>Updating</h2>
+Normally updating a package is quiet simple. Non-configuration files are exchanged silently, configuration files only if you haven't made any changes. If you did, the new version is saved with the suffix '.rpmnew' and rpm outputs a comment to check the file.
+<br /><br /> 
+Due to some major changes, it is not that easy with sapconf. Let me guide you thru an update and show you the bumps on the road.
+<br /><br /> 
+I have put my virtual machine back into the state, where no sapconf was installed and now I will install the latest 'old-fashioned' version.
+<pre>...
+(reset vm...)
+...
+sles12-sp3:~ # zypper in sapconf-4.1.11-40.40.24
+...
+Updating /etc/sysconfig/sapconf...
+Updating /etc/sysconfig/sapnote-1557506...
+Updating /etc/sysconfig/sapnote-1680803...
+...
+</pre>
+There is one configuration file that we haven't seen before: <tt>/etc/sysconfig/sapnote-1557506</tt>. It contains variables for the pagecache limit, which have been moved to <tt>/etc/sysconfig/sapconf</tt>. This is the reason that the file is not part of sapconf anymore.
+<br /><br /> 
+For my first test I will leave the configuration unchanged and just update sapconf after a reboot.
+<pre>sles12-sp3:~ # reboot
+...
+sles12-sp3:~ # zypper update sapconf
+...
+(1/1) Install: sapconf-4.1.12-40.47.1.noarch
+...
+Updating /etc/sysconfig/sapnote-1680803...
+Updating /etc/sysconfig/sapconf...
+Removing obsolete /etc/sysconfig/sapnote-1557506...
+...
+sles12-sp3:~ # grep sapconf /var/log/messages
+...
+2018-05-15T11:52:02.355283+02:00 sles12-sp3 systemd[1]: Reloading sapconf.
+...
+</pre>
+File <tt>/etc/sysconfig/sapnote-1557506</tt> has been removed. The other ones have been updated.
+Also the new configuration is applied immediately since sapconf has been restarted.
+<blockquote><strong>NOTE: </strong>If you have an unchanged sapconf configuration, updating to the re-worked version will install the new configuration and apply it immediately.</blockquote>
+Let me try this again, but have something changed in the configuration files first. (Again I will leave out <tt>/etc/sysconfig/sapnote-1680803</tt> because it belongs to the ASE profile that shouldn't be used any longer.)
+<pre>...
+(reset vm and install the 'old' sapconf)
+...
+sles12-sp3:~ # vi /etc/sysconfig/sapconf
+...
+SHMALL_MIN=8000000
+...
+sles12-sp3:~ # vi /etc/sysconfig/sapnote-1557506
+...
+ENABLE_PAGECACHE_LIMIT="yes"
+...
+OVERRIDE_PAGECACHE_LIMIT_MB="500"
+...
+</pre>
+Now I update sapconf:
+<pre>sles12-sp3:~ # zypper update sapconf
+...
+(1/1) Install: sapconf-4.1.12-40.47.1.noarch
+...
+Updating /etc/sysconfig/sapnote-1680803...
+Updating /etc/sysconfig/sapconf...
+Updating /etc/sysconfig/sapconf with line 'ENABLE_PAGECACHE_LIMIT="yes"' from /etc/sysconfig/sapnote-1557506...
+Updating /etc/sysconfig/sapconf with line 'PAGECACHE_LIMIT_IGNORE_DIRTY="1"' from /etc/sysconfig/sapnote-1557506...
+Updating /etc/sysconfig/sapconf with line 'PAGECACHE_LIMIT_MB="500"' from /etc/sysconfig/sapnote-1557506...
+Removing obsolete /etc/sysconfig/sapnote-1557506...
+...
+</pre>
+The settings from <tt>/etc/sysconfig/sapnote-1557506</tt> have been transferred to <tt>/etc/sysconfig/sapconf</tt> before the file was deleted.
+<blockquote><strong>WARNING:</strong> Due to a bug in sapconf-4.1.12-40.47.1 the configuration from <tt>/etc/sysconfig/sapnote-1557506</tt> cannot be transferred to <tt>/etc/sysconfig/sapconf</tt> if you have commented-out variables in it (like: <tt>#ENABLE_PAGECACHE_LIMIT<tt>).
+Remove them first!</tt></tt></blockquote>
+What is about the <tt>SHMALL_MIN</tt> setting?
+<pre>sles12-sp3:~ # grep SHMALL_MIN /etc/sysconfig/sapconf
+sles12-sp3:~ # grep SHMALL /etc/sysconfig/sapconf
+...
+SHMALL=1152921504606846720
+</pre>
+The value has not been transferred! The variable does not even exist anymore!
+The rework of sapconf included a renaming of most of its variables.
+Earlier versions never lowered a value, if the current one was higher than the configured one. This has been changed to give the admin full control about the settings in one place. Therefore variable names have been altered e.g. by removing the _MIN suffix.
+<br /><br /> 
+Here an overview:
+<table border="1">
+<tbody>
+<tr>
+<th>old version</th>
+<th>reworked version</th>
+<th></th>
+</tr>
+<tr>
+<td><tt>TMPFS_SIZE_MIN</tt></td>
+<td><tt>-</tt></td>
+<td>has been removed</td>
+</tr>
+<tr>
+<td><tt>SHMALL_MIN</tt></td>
+<td><tt>SHMALL</tt></td>
+<td>renamed, because no minimum anymore</td>
+</tr>
+<tr>
+<td><tt>SHMMAX_MIN</tt></td>
+<td><tt>SHMMAX</tt></td>
+<td>renamed, because no minimum anymore</td>
+</tr>
+<tr>
+<td><tt>SEMMSL_MIN</tt></td>
+<td><tt>SEMMSL</tt></td>
+<td>renamed, because no minimum anymore</td>
+</tr>
+<tr>
+<td><tt>SEMMNS_MIN</tt></td>
+<td><tt>SEMMNS</tt></td>
+<td>renamed, because no minimum anymore</td>
+</tr>
+<tr>
+<td><tt>SEMOPM_MIN</tt></td>
+<td><tt>SEMOPM</tt></td>
+<td>renamed, because no minimum anymore</td>
+</tr>
+<tr>
+<td><tt>SEMMNI_MIN</tt></td>
+<td><tt>SEMMNI</tt></td>
+<td>renamed, because no minimum anymore</td>
+</tr>
+<tr>
+<td><tt>VSZ_TMPFS_PERCENT</tt></td>
+<td><tt>VSZ_TMPFS_PERCENT</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>LIMIT_1</tt></td>
+<td><tt>LIMIT_1</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>LIMIT_2</tt></td>
+<td><tt>LIMIT_2</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>LIMIT_3</tt></td>
+<td><tt>LIMIT_3</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>LIMIT_4</tt></td>
+<td><tt>LIMIT_4</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>LIMIT_5</tt></td>
+<td><tt>LIMIT_5</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>LIMIT_6</tt></td>
+<td><tt>LIMIT_6</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>ENABLE_PAGECACHE_LIMIT</tt></td>
+<td><tt>ENABLE_PAGECACHE_LIMIT</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>PAGECACHE_LIMIT_IGNORE_DIRTY</tt></td>
+<td><tt>PAGECACHE_LIMIT_IGNORE_DIRTY</tt></td>
+<td></td>
+</tr>
+<tr>
+<td><tt>OVERRIDE_PAGECACHE_LIMIT_MB</tt></td>
+<td><tt>PAGECACHE_LIMIT_MB</tt></td>
+<td>renamed</td>
+</tr>
+<tr>
+<td><tt>-</tt></td>
+<td><tt>MAX_MAP_COUNT</tt></td>
+<td>new</td>
+</tr>
+<tr>
+<td><tt>-</tt></td>
+<td><tt>SHMMNI</tt></td>
+<td>new (not hardcoded anymore)</td>
+</tr>
+<tr>
+<td><tt>-</tt></td>
+<td><tt>DIRTY_BYTES</tt></td>
+<td>new</td>
+</tr>
+<tr>
+<td><tt>-</tt></td>
+<td><tt>DIRTY_BG_BYTES</tt></td>
+<td>new</td>
+</tr>
+<tr>
+<td><tt>-</tt></td>
+<td><tt>TCP_SLOW_START</tt></td>
+<td>new</td>
+</tr>
+<tr>
+<td><tt>-</tt></td>
+<td><tt>KSM</tt></td>
+<td>new</td>
+</tr>
+<tr>
+<td><tt>-</tt></td>
+<td><tt>NUMA_BALANCING</tt></td>
+<td>new (not hardcoded anymore)</td>
+</tr>
+<tr>
+<td><tt>-</tt></td>
+<td><tt>THP</tt></td>
+<td>new (not hardcoded anymore)</td>
+</tr>
+</tbody>
+</table>
+But the old configuration is not lost. The file has been moved away to <tt>/etc/sysconfig/sapconf.rpmsave</tt>. You should go thru that file and take the one you really need.
+<pre>sles12-sp3:~ # ls /etc/sysconfig/sapconf*
+/etc/sysconfig/sapconf  /etc/sysconfig/sapconf.rpmsave
+</pre>
+Don't forget a manually changed <tt>tuned.conf</tt>!
+The profiles beneath <tt>/usr/lib/tuned/</tt> will be overridden, but not the configuration in <tt>/etc/tuned/</tt>. Copy your old <tt>tuned.conf</tt> away, copy the new profile shipped with the updated sapconf and alter it to your needs!
+<br /><br /> 
+By the way, if you have copied <tt>script.sh</tt> together wit the <tt>tuned.conf</tt> to <tt>/etc/tuned/</tt> instead of altering the path in the past (something I told in the last article is a very bad idea), you will run into bigger trouble.
+The old script can not handle the new variable names in <tt>/etc/sysconfig/sapconf</tt> and mostly nothing will work.
+This shows how important it is to alter the path instead of simply copying the file. Sometimes the easiest way is not the best way to do something!
+<blockquote><strong>IMPORTANT:</strong> You have to transfer settings from your old configuration (<tt>/etc/sysconfig/sapconf.rpmsave</tt>) to the new one (<tt>/etc/sysconfig/sapconf</tt>) manually after an update to the re-worked sapconf version!
+Use this opportunity to question old decisions.
+If you have a manually altered <tt>tuned.conf</tt> please copy the new <tt>tuned.conf</tt> from the profile directory and change that one to your needs!</blockquote>
+If you are verifying your configuration anyway, please use the chance to check that you set a system parameter on one place and one place only!
+What do I mean by this? Sometimes there is more than one way to configure a system parameter. The performance behavior of a cpu can be set by some commandline parameters or with tuned. The <tt>MAX_MAP_COUNT</tt> can be set by an entry in <tt>/etc/sysctl.conf</tt> or a config file in <tt>/etc/sysctl.d/</tt> or by sapconf.
+If you choose sapconf as central your configuration tool, remove the other settings. Anything else will cause trouble, inconsistent system behavior and confusion.
+<blockquote><strong>NOTE</strong>: Avoid "multi-configuration" here. For some parameters handled by sapconf, other ways of configuration exist. Some can be configured by sysctl, others by boot parameters. Choose one way and stay consistent, else debugging can become difficult.</blockquote>
+For a change this was a short article.
+The next one will cover the unlikely possibility of a sapconf deinstallation. ;-)
+
+<hr />
+
+previous article: <a href="sapconf - A way to prepare a SLES system for SAP workload - Part 2.html">sapconf – A way to prepare a SLES system for SAP workload – Part 2</a>
+<br /><br />  
+next article: <a href="sapconf - A way to prepare a SLES system for SAP workload - Part 4.html">sapconf – A way to prepare a SLES system for SAP workload – Part 4</a>
+
+<hr />
+
+&nbsp;
+{% endblock content %}

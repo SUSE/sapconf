@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>Noop now named none</title>
+        <style>
+            body { 
+    font-family: poppins,Verdana,sans-serif; 
+    background-color: white; 
+    width: 60%;
+    margin-left: 10%;
+}
+ul { padding-left: 1em; }
+h1 { 
+    padding-bottom: 0; 
+    margin-bottom: 0; 
+}
+a {font-weight: bold;}
+#author { 
+    font-style: italic; 
+    padding-top: 0; 
+    margin-top: 0; 
+    padding-bottom: 2em;
+    margin-bottom: 2em; 
+    border-bottom: thin solid gray; 
+}
+pre {
+    word-break: break-all;
+    color: #333333;
+    background-color: #f5f5f5;
+    border: 1px solid #cccccc;
+}
+code {
+    padding: 2px 4px;
+    font-size: 90%;
+    color: #c7254e;
+    background-color: #f9f2f4;
+    border-radius: 4px;
+  }
+  blockquote {
+    border-left: #cccccc solid 0.2em;
+    padding-left: 2em;
+    margin-left: 0;
+    font-size: 85%;
+  }
+  table {
+    font-size: 90%;
+    margin: 1em 0;
+    width: 100%;
+    background-color: transparent;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+  table tbody tr:nth-child(2n) {
+    background-color: #efefef;
+  }
+  table td {
+    border: 1px solid #d5d5d5;
+    padding: .2em;
+  }
+  table th {
+    border: 1px solid #d5d5d5;
+    padding: .2em;
+  }
+
+        </style>
+    </head>
+    <body>
+        <h1>Noop now named none</h1>
+        <p id="author">November 29, 2019 | By: Sören Schmidt</p>
+        Lately more and more people approached me with saptune warnings regarding 'noop' being an invalid scheduler.
+        <br /><br />
+        With new Servie Packs we see a transition from non-multiqueue schedulers (noop, cfq, deadline) to multiqueue schedulers (none, mq-deadline, bfq, kyber).
+        This transition will be finished with kernel 5.x (SLES 15 SP2). Only multiqueue schedulers will remain.
+        Even if you do not have upgraded lately, new hardware like NVMe's can come with multiqueue support only.
+        <br /><br />
+        The SAP Notes and "1984787 - SUSE LINUX Enterprise Server 12: Installation notes" and "2578899 - SUSE Linux Enterprise Server 15: Installation Note" recommended 'noop' for most environments (e.g. RAID, storage arrays, virtualizaton) for quite some time. Now we have added the recommendation 'none' for multiqueue schedulers.
+        Keep in mind, that these are general recommendations. Contact your storage or virtualization vendor and do your own tests to make sure you have chosen the best scheduler for your workload.
+        <br /><br />
+        Our configuration tools sapconf and saptune are going to be updated very soon to reflect this change. I will update this post as soon the updates are available.
+        In the meantime you might run into saptune warnings or errors in the tuned.log (sapconf). The TIDs <a href="https://www.suse.com/support/kb/doc/?id=7024298">7024298</a> and <a href="https://www.suse.com/support/kb/doc/?id=7024299">7024299</a> cover this.
+        Most multiqueue schedulers bring their own sensible defaults, so it might not even be necessary to change anything.
+        <br /><br />
+        <strong>Update:</strong>
+        <br /><br />
+        Saptune and sapconf (v5) now support both non-multiqueue schedulers (noop, cfq, deadline) and multiqueue schedulers (none, mq-deadline, bfq, kyber) simultaneously.
+        Please read the man pages of both tools for details.
+<body>
+</html>

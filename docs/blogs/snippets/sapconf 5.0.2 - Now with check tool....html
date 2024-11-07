@@ -1,0 +1,61 @@
+{% extends "base.html.template" %}
+
+{% block content %}
+<p id="author">May 6, 2021 | By: Sören Schmidt</p>
+<p>I admit, that the title sounds a bit like a commercial and maybe in a way it is.
+All supported Service Packs have received the latest sapconf package (5.0.2).</p>
+<p>It contains some minor bugfixes, but the reason for this blog post is the the newly added check tool.
+In the past one reason for Service Requests or SAP Incidents about sapconf was mixed up setups.</p>
+
+<p>Wrong tuned profiles, forgotten services, something like this.
+The new check tool allows you to verify yourself, if everything is in order.</p>
+
+<pre>sles15sp2:~ # sapconf_check
+This is sapconf_check v1.0.
+
+It verifies if sapconf is set up correctly and will give advice to do so.
+Please keep in mind:
+- This tool does not check, if the tuning itself works correctly.
+- Follow the hints from top to down to minimize side effects.
+
+Checking sapconf
+================
+[ <span style="color: #008000">OK</span> ] sapconf package has version 5.0.2
+[ <span style="color: #008000">OK</span> ] saptune.service is inactive
+[ <span style="color: #008000">OK</span> ] saptune.service is disabled
+[ <span style="color: #008000">OK</span> ] tuned.service is disabled/inactive
+[ <span style="color: #008000">OK</span> ] sapconf.service is active
+[ <span style="color: #008000">OK</span> ] sapconf.service is enabled
+
+Sapconf is set up correctly.</pre>
+
+<p>That's how you want it to look like!</p>
+<p>But what if something isn't quite right?</p>
+
+<pre>sles15sp2:~ # sapconf_check
+
+This is sapconf_check v1.0.
+
+It verifies if sapconf is set up correctly and will give advice to do so.
+Please keep in mind:
+- This tool does not check, if the tuning itself works correctly.
+- Follow the hints from top to down to minimize side effects.
+
+Checking sapconf
+================
+[ <span style="color: #008000">OK</span> ] sapconf package has version 5.0.2
+[ <span style="color: #008000">OK</span> ] saptune.service is inactive
+[ <span style="color: #008000">OK</span> ] saptune.service is disabled
+[<span style="color: #ffff00">WARN</span>] tuned.service is enabled/active with profile 'virtual-guest -&gt; Sapconf does not require tuned! Run 'systemctl stop tuned.service', if not needed otherwise.
+[<span style="color: #ff0000">FAIL</span>] sapconf.service is inactive -&gt; Run 'systemctl start sapconf.service' to activate the tuning now.
+[<span style="color: #ff0000">FAIL</span>] sapconf.service is disabled -&gt; Run 'systemctl enable sapconf.service' to activate sapconf at boot.
+
+1 warning(s) have been found.
+2 error(s) have been found.
+Sapconf will not work properly!</pre>
+
+<p>It not only tells you what is wrong, but also gives you hints how to solve the issue.</p>
+<p>We hope this will help.</p>
+
+<p>Don't forget! It will not verify the tuning itself, but it will tell you if sapconf can do it's job!</p>
+{% endblock content %}

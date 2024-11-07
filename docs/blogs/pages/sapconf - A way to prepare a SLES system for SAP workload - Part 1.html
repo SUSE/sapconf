@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <title>sapconf - A way to prepare a SLES system for SAP workload - Part 1</title>
+        <style>
+            body { 
+    font-family: poppins,Verdana,sans-serif; 
+    background-color: white; 
+    width: 60%;
+    margin-left: 10%;
+}
+ul { padding-left: 1em; }
+h1 { 
+    padding-bottom: 0; 
+    margin-bottom: 0; 
+}
+a {font-weight: bold;}
+#author { 
+    font-style: italic; 
+    padding-top: 0; 
+    margin-top: 0; 
+    padding-bottom: 2em;
+    margin-bottom: 2em; 
+    border-bottom: thin solid gray; 
+}
+pre {
+    word-break: break-all;
+    color: #333333;
+    background-color: #f5f5f5;
+    border: 1px solid #cccccc;
+}
+code {
+    padding: 2px 4px;
+    font-size: 90%;
+    color: #c7254e;
+    background-color: #f9f2f4;
+    border-radius: 4px;
+  }
+  blockquote {
+    border-left: #cccccc solid 0.2em;
+    padding-left: 2em;
+    margin-left: 0;
+    font-size: 85%;
+  }
+  table {
+    font-size: 90%;
+    margin: 1em 0;
+    width: 100%;
+    background-color: transparent;
+    border-collapse: collapse;
+    border-spacing: 0;
+  }
+  table tbody tr:nth-child(2n) {
+    background-color: #efefef;
+  }
+  table td {
+    border: 1px solid #d5d5d5;
+    padding: .2em;
+  }
+  table th {
+    border: 1px solid #d5d5d5;
+    padding: .2em;
+  }
+
+        </style>
+    </head>
+    <body>
+        <h1>sapconf - A way to prepare a SLES system for SAP workload - Part 1</h1>
+        <p id="author">June 5, 2018 | By: Sören Schmidt</p>
+
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+            <br /><br />    
+        For all the people who read this post for the first time: "Nice to meet you!"
+        And for those who came back here due to my sapconf 5 announcement: "Welcome back!"
+        <br /><br />
+        I wracked my brain if I should have a new series about sapconf 5 or just add some comments to my old blog posts. As you might guess, I decided for the latter.
+        If you read through this series you will find here and there boxes like this, labeled with "sapconf 4 -&gt; sapconf 5", where I explain the differences. Remember, the major change between 4 and 5 is, that we get rid of tuned.
+        <br /><br />
+        Enjoy!</blockquote>
+        As promised in the post "A new sapconf is available" this is the first article about sapconf. This series will cover the installation, update and configuration of sapconf, as well as giving a few tips what you should take care of and how to achieve certain things.
+        <br /><br />
+        To do so, I have set up a SLES 12 SP3 with the latest updates and sapconf 4.1.12-40.47.1.
+        <blockquote><strong>NOTE</strong>: For further documentation check SAP note 1275776 and the man pages shipped with sapconf.</blockquote>
+        This article will cover the installation.
+        <br /><br />
+        Let's start!
+        <h2>Installation</h2>
+        <pre>sles12-sp3:~ # zypper install sapconf
+        Refreshing service 'SUSE_Linux_Enterprise_Server_12_SP3_x86_64'.
+        Loading repository data...
+
+        Reading installed packages...
+        Resolving package dependencies...
+          
+        The following 4 NEW packages are going to be installed:
+         sapconf sysstat tuned uuidd
+          
+        4 new packages to install.
+        Overall download size: 534.7 KiB. Already cached: 0 B. After the operation, additional 1.4 MiB will be used.
+        Continue? [y/n/...? shows all options] (y):
+        Retrieving package
+        ...
+        (removed for brevity)
+        ...
+        Additional rpm output:
+        Created symlink from /etc/systemd/system/sockets.target.wants/uuidd.socket to /usr/lib/systemd/system/uuidd.socket.
+        ...
+        Additional rpm output:
+        Updating /etc/sysconfig/sapnote-1680803...
+        Updating /etc/sysconfig/sapconf...
+        Created symlink from /etc/systemd/system/multi-user.target.wants/sapconf.service to /usr/lib/systemd/system/sapconf.service.
+        Set the maximum number of OS tasks each user may run concurrently (UserTasksMax) to 'infinity'
+        With this setting your system is vulnerable to fork bomb attacks.
+        Please reboot the system for the UserTasksMax change to become effective
+        </pre>
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+        <br /><br />
+        Please ignore anything about the tuned package. It does not get pulled in by a dependency anymore!</blockquote>
+        This is quite a lot of information to digest. Let me work thru it step by step and tell you the meaning.
+        <pre>The following 4 NEW packages are going to be installed:
+         sapconf sysstat tuned uuidd
+        </pre>
+        Obviously <tt>sapconf</tt> is not the only package we have got. The packages <tt>sysstat</tt> to collect sar data, <tt>tuned</tt> for system tuning (we'll come to it later) and <tt>uuidd</tt> which is indispensable for SAP software have been installed too.
+        <br /><br />
+        Everyone of these packages contains units for systemd (just believe me here), so let's see what systemd has to say about the status:
+        <pre> sles12-sp3:~ # systemctl status sapconf sysstat tuned uuidd
+         ● sapconf.service - sapconf
+         Loaded: loaded (/usr/lib/systemd/system/sapconf.service; enabled; vendor preset: enabled)
+         Active: active (exited) since Fri 2018-05-11 12:02:18 CEST; 21min ago
+         ...</pre>
+        After the installation <tt>sapconf.service</tt> has been enabled and started.
+        <br /><br />
+        <strong>This is important!</strong>
+        <br /><br />
+        Sapconf is meant as a minimalistic tool to prepare your system for SAP workload. Installation implies the intend to use it, so a default configuration has been applied.
+        <br /><br />
+        These default values are sane and should be valid for most use cases. Nevertheless you should verify that all settings are suited for your scenario.
+        If you feel uneasy that sapconf is changing your system directly after installation, I will show in a later article, how you can prevent this.
+        <br /><br />
+        There is one exception when sapconf is not enabled and started by default. Because sapconf relies on tuned, a set non-sapconf profile prevents this (I will cover this in more detail in the article about sapconf configuration).
+        This is based under the assumption that an administrator has already configured tuned on purpose and sapconf will not interfere with this.
+        <blockquote><strong>IMPORTANT:</strong> After installation sapconf is started and enabled unless a non-sapconf tuned profile is set already!</blockquote>
+        <blockquote><strong>sapconf 4 → sapconf 5</strong></blockquote>
+        <blockquote>There is no exception anymore, which could prevent sapconf 5 from being enabled on boot!
+        After updating to sapconf 5 tuned gets disabled and stopped.
+        If you enable it again tuned will work together with sapconf! If you do not configure tuned carefully you will have both tools fight each other! I have added a special chapter later, how to use both.</blockquote>
+        <pre>● sysstat.service - Write information about system start to sysstat log
+         Loaded: loaded (/usr/lib/systemd/system/sysstat.service; disabled; vendor preset: disabled)
+         Active: active (exited) since Fri 2018-05-11 12:02:18 CEST; 21min ago
+         ...
+        </pre>
+        Sysstat was started, but is disabled.
+        The <tt>sapconf.service</tt> will start <tt>sysstat.service</tt> automatically.
+        <br /><br />
+        Here is the magic behind:
+        <pre>sles12-sp3:~ # cat /usr/lib/systemd/system/sapconf.service
+         [Unit]
+         Description=sapconf
+         ...
+         Wants=sysstat.service
+         ...</pre>
+        As long as you use sapconf, sysstat will be started and stopped with it. When you remove the sapconf package the sysstat package will remain on the system, but the service will be inactive. You have to enable the sysstat service, if you want to use it further.
+        It does not do any harm to do it now if you like.
+        If you have objections against sysstat, I will show in a later article a way to disable it.
+        <br /><br />
+        With tuned we see the same behavior like with sysstat. It is disabled, but started by <tt>sapconf.service</tt>.
+        <br /><br />
+        But when we check <tt>/usr/lib/systemd/system/sapconf.service</tt>, we do not see any dependency for tuned.
+        To find out how it works, you have to dig deeper and check the script, that is started by the <tt>sapconf.service</tt>:
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+            <br /><br />
+        Again. Please ignore this about tuned if youre using sapconf 5.</blockquote>
+        <pre>sles12-sp3:~ # cat /usr/lib/systemd/system/sapconf.service
+         ...
+         ExecStart=/usr/sbin/sapconf start
+         ...
+         sles12-sp3:~ # cat /usr/sbin/sapconf
+         ...
+         case "$1" in
+         start|restart|try-restart)
+        ...
+         if ! systemctl status tuned &amp;&gt; /dev/null; then
+         systemctl start tuned
+         fi
+         ...</pre>
+        Mystery solved.
+        <br /><br />
+        Now, only <tt>uuidd</tt> is left:
+        <pre>● uuidd.service - Daemon for generating UUIDs
+         Loaded: loaded (/usr/lib/systemd/system/uuidd.service; indirect; vendor preset: disabled)
+         Active: inactive (dead)</pre>
+        Strange. Disabled and dead! But let us go back and take a closer lock to a tiny part of the rpm output above:
+        <pre>...
+         Additional rpm output:
+         Created symlink from /etc/systemd/system/sockets.target.wants/uuidd.socket to /usr/lib/systemd/system/uuidd.socket.
+        ...</pre>
+        The <tt>uuidd</tt> will be started by socket activation, so we have to check the status of the <tt>uuidd.socket</tt> and not the service:
+        <pre>sles12-sp3:~ # systemctl status uuidd.socket
+         ● uuidd.socket - UUID daemon activation socket
+         Loaded: loaded (/usr/lib/systemd/system/uuidd.socket; enabled; vendor preset: enabled)
+         Active: active (listening) since Fri 2018-05-11 13:22:34 CEST; 13min ago</pre>
+        Ah! Enabled and active. How it should be.
+        <br /><br />
+        Another glance at the service file of sapconf connects the dots:
+        <pre>sles12-sp3:~ # cat /usr/lib/systemd/system/sapconf.service
+        ...
+        Requires=uuidd.socket
+        ...</pre>
+        There are a few lines left:
+        <pre>...
+        Updating /etc/sysconfig/sapnote-1680803...
+        Updating /etc/sysconfig/sapconf...
+        ...</pre>
+        Some configuration files have been updated.
+        I skip these for now, because I tell more about the configuration of sapconf in the next article.
+        <pre>...
+        Created symlink from /etc/systemd/system/multi-user.target.wants/sapconf.service to /usr/lib/systemd/system/sapconf.service.
+        ...</pre>
+        Well, here we see that the sapconf service is enabled for the multi-user target. We have found out that already.
+        <pre>...
+        Set the maximum number of OS tasks each user may run concurrently (UserTasksMax) to 'infinity'
+        With this setting your system is vulnerable to fork bomb attacks.
+        Please reboot the system for the UserTasksMax change to become effective
+        ...</pre>
+        A reboot is required!
+        <br /><br />
+        Here a systemd limit (UserTasksMax) is set to infinity, because the system default is to low for most SAP workloads.
+        <br /><br />
+        Those who have more knowledge about systemd might argue, that a reboot is not required. Users should log off and log on again, programs have to be restarted, and so on and so on. This might be true, but in real life the chance that something is overseen even by a skilled administrator is high. A reboot is much easier and makes sure that the changes are in effect.
+        Even if sapconf tries to avoid reboots, sometimes it is unavoidable.
+        <blockquote><strong>IMPORTANT:</strong> Please always check the output of the rpm to see, if additional steps are required after installation.</blockquote>
+        Sapconf is installed and working with its defaults. I have tried to summarize the dependencies in this picture:
+        <br /><br />
+        <img src="media/sapconf-Dependencies.png" alt="" width="1123" height="794" /> Dependencies of sapconf 4
+        <blockquote><strong>sapconf 4 → sapconf 5</strong>
+            <br /><br />
+        I have updated the graphic for sapconf 5:
+        <br /><br />
+        <img src="media/sapconf5-Dependencies.png" alt="" width="1123" height="794" /> Dependencies of sapconf 5</blockquote>
+        That's it for today. The next article will cover the configuration.
+
+        <hr />
+
+        next article: <a href="sapconf - A way to prepare a SLES system for SAP workload - Part 2.html">sapconf – A way to prepare a SLES system for SAP workload – Part 2</a>
+
+        <hr />
+
+<body>
+</html>

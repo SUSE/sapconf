@@ -1,0 +1,40 @@
+{% extends "base.html.template" %}
+
+{% block content %}
+<p id="author">June 4, 2018 | By: Sören Schmidt</p>
+
+Those who administrate systems running SAP applications on SLES may be already familiar with the configuration and tuning tool "sapconf".
+For those who don't, now is an excellent time to do so!
+
+A new improved version of sapconf has been released for SLES 12 SP1 onwards.
+Some key improvements are:
+<ul>
+ 	<li>one central configuration file (besides the tuned config)</li>
+ 	<li>Simplified and adjusted configuration based on current SAP notes</li>
+ 	<li>Unified sap-hana and sap-netweaver profiles to simplify deployment</li>
+ 	<li>Improved documentation</li>
+</ul>
+&nbsp;
+
+So it is worth to update or install it.
+
+Here the minimal versions for the reworked sapconf:
+<p>
+	4.1.12-40.47.1 (SLES 12 SP3)<br />
+	4.1.12-33.15.1 (SLES 12 SP2)<br />
+	4.1.12-18.24.1 (SLES 12 SP1)<br />
+</p>
+
+I wrote a blog post series about how to install, update and configure the new sapconf, as well as giving a few tips what you should look out for and how to achieve certain things:
+<p>
+<a href="https://www.suse.com/c/sapconf-a-way-to-prepare-a-sles-system-for-sap-workload-part-1/">sapconf – A way to prepare a SLES system for SAP workload – Part 1</a><br /><br />
+<a href="https://www.suse.com/c/sapconf-a-way-to-prepare-a-sles-system-for-sap-workload-part-2/">sapconf – A way to prepare a SLES system for SAP workload – Part 2</a><br /><br />
+<a href="https://www.suse.com/c/sapconf-a-way-to-prepare-a-sles-system-for-sap-workload-part-3/">sapconf – A way to prepare a SLES system for SAP workload – Part 3</a><br /><br />
+<a href="https://www.suse.com/c/sapconf-a-way-to-prepare-a-sles-system-for-sap-workload-part-4/">sapconf – A way to prepare a SLES system for SAP workload – Part 4</a><br /><br />
+<a href="https://www.suse.com/c/sapconf-a-way-to-prepare-a-sles-system-for-sap-workload-part-5/">sapconf – A way to prepare a SLES system for SAP workload – Part 5</a>
+</p>
+
+<hr />
+
+&nbsp;
+{% endblock content %}

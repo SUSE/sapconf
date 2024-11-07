@@ -1,0 +1,22 @@
+{% extends "base.html.template" %}
+
+{% block content %}
+<p id="author">November 29, 2019 | By: Sören Schmidt</p>
+Lately more and more people approached me with saptune warnings regarding 'noop' being an invalid scheduler.
+<br /><br />
+With new Servie Packs we see a transition from non-multiqueue schedulers (noop, cfq, deadline) to multiqueue schedulers (none, mq-deadline, bfq, kyber).
+This transition will be finished with kernel 5.x (SLES 15 SP2). Only multiqueue schedulers will remain.
+Even if you do not have upgraded lately, new hardware like NVMe's can come with multiqueue support only.
+<br /><br />
+The SAP Notes and "1984787 - SUSE LINUX Enterprise Server 12: Installation notes" and "2578899 - SUSE Linux Enterprise Server 15: Installation Note" recommended 'noop' for most environments (e.g. RAID, storage arrays, virtualizaton) for quite some time. Now we have added the recommendation 'none' for multiqueue schedulers.
+Keep in mind, that these are general recommendations. Contact your storage or virtualization vendor and do your own tests to make sure you have chosen the best scheduler for your workload.
+<br /><br />
+Our configuration tools sapconf and saptune are going to be updated very soon to reflect this change. I will update this post as soon the updates are available.
+In the meantime you might run into saptune warnings or errors in the tuned.log (sapconf). The TIDs <a href="https://www.suse.com/support/kb/doc/?id=7024298">7024298</a> and <a href="https://www.suse.com/support/kb/doc/?id=7024299">7024299</a> cover this.
+Most multiqueue schedulers bring their own sensible defaults, so it might not even be necessary to change anything.
+<br /><br />
+<strong>Update:</strong>
+<br /><br />
+Saptune and sapconf (v5) now support both non-multiqueue schedulers (noop, cfq, deadline) and multiqueue schedulers (none, mq-deadline, bfq, kyber) simultaneously.
+Please read the man pages of both tools for details.
+{% endblock content %}
