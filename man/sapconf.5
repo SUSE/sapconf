@@ -195,6 +195,8 @@ Set to 'never' to disable or to 'always' to enable or 'madvise'.
 .br
 \fBmadvise\fP will enter direct reclaim like 'always' but only for regions that
 are have used madvise(MADV_HUGEPAGE). This is the default behaviour.
+.br
+Due to the special manner of SAP HANA's memory management, it is recommended to configure THP to "madvise" starting with SLES 15 SP5 and higher.
 .PP
 .RS 4
 Set in \fB/sys/kernel/mm/transparent_hugepage/enabled\fP during the SAP tuning part of the scripting
